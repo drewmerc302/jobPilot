@@ -141,11 +141,23 @@ def create_app() -> FastAPI:
     return app
 
 
+def _port_in_use(port: int) -> bool:
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
 def _serve(app: FastAPI) -> None:
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
 
 
 def main() -> None:
+    if _port_in_use(PORT):
+        # Another instance is already running — just focus the browser.
+        webbrowser.open(f"http://127.0.0.1:{PORT}/")
+        return
+
     app = create_app()
     threading.Thread(target=_serve, args=(app,), daemon=True).start()
     time.sleep(0.8)
