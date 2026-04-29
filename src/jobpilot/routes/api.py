@@ -59,6 +59,7 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
         ctx["spent"] = spent
         ctx["budget"] = config.monthly_budget
         response = templates.TemplateResponse(request, "_partials/run_status.html", ctx)
+        remaining = max(0.0, config.total_budget - db.sum_costs_total())
         trigger_data = {
             "runComplete": {
                 "run_id": run_id,
@@ -69,6 +70,7 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
                     "new_jobs", run.get("new_jobs", 0) if run else 0
                 ),
                 "spent": spent,
+                "remaining": remaining,
             }
         }
         response.headers["HX-Trigger"] = json.dumps(trigger_data)

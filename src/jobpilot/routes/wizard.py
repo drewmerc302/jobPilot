@@ -33,7 +33,10 @@ async def root(request: Request):
         return RedirectResponse("/wizard/step/0")
     if not search_params_store.has_params():
         return RedirectResponse("/wizard/step/3")
-    if db.get_recent_runs(limit=1):
+    recent = db.get_recent_runs(limit=1)
+    if recent:
+        if recent[0].get("completed_at") is None:
+            return RedirectResponse(f"/wizard/step/4?run_id={recent[0]['id']}")
         return RedirectResponse("/matches")
     return RedirectResponse("/wizard/step/4")
 
@@ -261,6 +264,8 @@ async def step4_get(request: Request) -> HTMLResponse:
         return RedirectResponse("/wizard/step/1" if not profile else "/wizard/step/3")
 
     db = request.app.state.db
+    if db.count_runs_today() >= 4:
+        return RedirectResponse("/matches?refresh_capped=1", status_code=303)
     config = request.app.state.config
     client = request.app.state.client
     run_status = request.app.state.run_status

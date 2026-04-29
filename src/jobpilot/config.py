@@ -28,6 +28,7 @@ class Config:
     adzuna_app_id: str = field(default_factory=lambda: os.getenv("ADZUNA_APP_ID", ""))
     adzuna_app_key: str = field(default_factory=lambda: os.getenv("ADZUNA_APP_KEY", ""))
     monthly_budget: float = 5.00
+    total_budget: float = 10.00
 
     def __post_init__(self):
         overrides_path = self.data_dir / "config_overrides.json"
@@ -38,6 +39,8 @@ class Config:
                     self.anthropic_api_key = overrides["anthropic_api_key"]
                 if "monthly_budget" in overrides:
                     self.monthly_budget = float(overrides["monthly_budget"])
+                if "total_budget" in overrides:
+                    self.total_budget = float(overrides["total_budget"])
             except Exception:
                 pass
 

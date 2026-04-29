@@ -366,7 +366,7 @@ class Database:
             SELECT m.job_id, j.company, j.title, j.url, j.location, m.relevance_score,
                    COALESCE(a.status, 'new') as status,
                    a.applied_date, a.status_updated_at, a.notes,
-                   m.matched_at, m.resume_path
+                   m.matched_at, m.resume_path, m.match_reason
             FROM matches m
             JOIN jobs j ON m.job_id = j.id
             LEFT JOIN applications a ON m.job_id = a.job_id
@@ -526,6 +526,18 @@ class Database:
             day=1, hour=0, minute=0, second=0, microsecond=0
         ).isoformat()
         return self.sum_costs_since(month_start)
+
+    def sum_costs_total(self) -> float:
+        row = self._conn.execute(
+            "SELECT COALESCE(SUM(estimated_cost), 0.0) AS total FROM cost_events"
+        ).fetchone()
+        return row["total"] or 0.0
+
+    def count_runs_today(self) -> int:
+        row = self._conn.execute(
+            "SELECT COUNT(*) AS cnt FROM runs WHERE date(started_at) = date('now')"
+        ).fetchone()
+        return row["cnt"] or 0
 
     def close(self) -> None:
         self._conn.close()

@@ -62,9 +62,9 @@
     if (toast) {
       const jobs = detail.new_jobs ?? 0;
       const matches = detail.new_matches ?? 0;
-      const cost = (detail.spent ?? 0).toFixed(2);
+      const remaining = (detail.remaining ?? 0).toFixed(2);
       toast.innerHTML =
-        `<div class="toast">✓ ${jobs} new jobs · ${matches} matches · $${cost} spent this month</div>`;
+        `<div class="toast">✓ ${jobs} new jobs · ${matches} matches · $${remaining} remaining</div>`;
       setTimeout(() => { toast.innerHTML = ""; }, 6000);
     }
   });

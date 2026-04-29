@@ -3,6 +3,13 @@
 
 {% block content %}
 <div class="page">
+  {% if refresh_capped %}
+  <div class="alert alert-error" id="refresh-capped-banner" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <span>Refresh limit reached — 4 refreshes per day maximum.</span>
+    <button class="btn btn-danger btn-sm" style="margin-left:16px;white-space:nowrap" onclick="document.getElementById('refresh-capped-banner').remove()">Dismiss</button>
+  </div>
+  {% endif %}
+
   {% if spent and budget and spent >= budget * 0.8 %}
   <div class="alert alert-error" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <span>

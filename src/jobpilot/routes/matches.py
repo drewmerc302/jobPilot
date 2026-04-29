@@ -22,6 +22,7 @@ async def matches_list(request: Request) -> HTMLResponse:
     matches = db.get_all_applications()
     spent = db.sum_costs_this_month()
     sp = request.app.state.search_params_store.load()
+    refresh_capped = request.query_params.get("refresh_capped")
     return request.app.state.templates.TemplateResponse(
         request,
         "matches.html",
@@ -30,6 +31,7 @@ async def matches_list(request: Request) -> HTMLResponse:
             "spent": spent,
             "budget": config.monthly_budget,
             "sp": sp,
+            "refresh_capped": refresh_capped,
         },
     )
 
