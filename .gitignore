@@ -58,6 +58,13 @@ var/
 ## mpeltonen/sbt-idea plugin
 .idea_modules/
 
+# Virtual environments
+.venv/
+venv/
+
+# Runtime data (SQLite DB, config overrides)
+data/
+
 # Briefcase log files
 logs/
 
