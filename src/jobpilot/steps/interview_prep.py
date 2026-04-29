@@ -1,0 +1,169 @@
+import logging
+import urllib.parse
+import urllib.request
+
+import anthropic
+import yaml
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+from jobpilot.config import Config
+from jobpilot.db import Database
+
+logger = logging.getLogger(__name__)
+
+_llm_retry = retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type((anthropic.APIError, anthropic.APIConnectionError)),
+    reraise=True,
+)
+
+PREP_TOOL = {
+    "name": "interview_prep",
+    "description": "Generate structured interview preparation content for a job",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "likely_questions": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Predicted behavioral and technical interview questions based on the JD",
+            },
+            "star_stories": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "question": {"type": "string"},
+                        "resume_bullet": {"type": "string"},
+                        "situation": {"type": "string"},
+                        "task": {"type": "string"},
+                        "action": {"type": "string"},
+                        "result": {"type": "string"},
+                    },
+                    "required": [
+                        "question",
+                        "resume_bullet",
+                        "situation",
+                        "task",
+                        "action",
+                        "result",
+                    ],
+                },
+                "description": "STAR story mappings from resume experience to interview questions",
+            },
+            "talking_points": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "3-5 key things to emphasize about your background for this specific role",
+            },
+            "red_flags": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Gaps or weaknesses relative to the JD to prepare for",
+            },
+        },
+        "required": ["likely_questions", "star_stories", "talking_points", "red_flags"],
+    },
+}
+
+
+def _most_recent_role(resume_data: dict) -> str:
+    """Extract the candidate's most recent job title for use in the prompt."""
+    experience = resume_data.get("experience", [])
+    if experience:
+        first = experience[0]
+        title = first.get("title", "")
+        if title:
+            return title
+        positions = first.get("positions", [])
+        if positions:
+            return positions[0].get("title", "professional")
+    return "professional"
+
+
+def _web_research(company: str) -> str:
+    try:
+        url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(company)}"
+        with urllib.request.urlopen(url, timeout=5) as r:
+            import json
+
+            data = json.loads(r.read())
+            return data.get("extract", "")[:500]
+    except Exception:
+        return ""
+
+
+@_llm_retry
+def _call_llm(
+    job: dict, resume_data: dict, config: Config, extra_context: str = ""
+) -> dict:
+    client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+    role = _most_recent_role(resume_data)
+    resume_text = yaml.dump(resume_data, default_flow_style=False)[:4000]
+
+    prompt = f"""You are preparing a {role} candidate for an interview.
+
+Job: {job["company"]} — {job["title"]}
+Description:
+{(job.get("description") or "")[:3000]}
+
+Candidate's resume (YAML):
+{resume_text}
+"""
+    if extra_context:
+        prompt += f"\nAdditional company context:\n{extra_context}\n"
+
+    prompt += (
+        "\nGenerate structured interview prep content using the interview_prep tool."
+    )
+
+    response = client.messages.create(
+        model=config.llm_tailor_model,
+        max_tokens=2000,
+        tools=[PREP_TOOL],
+        tool_choice={"type": "any"},
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    for block in response.content:
+        if hasattr(block, "type") and block.type == "tool_use":
+            return block.input
+
+    raise ValueError("LLM did not return tool_use block")
+
+
+def generate_interview_prep(
+    db: Database,
+    job_id: str,
+    resume_data: dict,
+    config: Config,
+    research: bool = False,
+) -> dict | None:
+    """Generate interview prep content for a job.
+
+    resume_data is passed explicitly — storage location is a Phase 2 concern.
+    Returns a dict of prep content (likely_questions, star_stories, talking_points,
+    red_flags), or None on failure. The caller (Phase 2 FastAPI) renders this as HTML.
+    PDF export is deferred to v1.x.
+    """
+    job = db.get_job(job_id)
+    if not job:
+        logger.warning(f"interview_prep: job {job_id} not found")
+        return None
+
+    extra_context = ""
+    if research:
+        logger.info(f"interview_prep: fetching company research for {job['company']}")
+        extra_context = _web_research(job["company"])
+
+    try:
+        return _call_llm(dict(job), resume_data, config, extra_context)
+    except Exception as e:
+        logger.error(f"interview_prep: LLM call failed for {job_id}: {e}")
+        return None
