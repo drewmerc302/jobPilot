@@ -42,6 +42,7 @@ universal_build = false
 requires = [
     "std-nslog~=1.0.3",
 ]
+entitlement."com.apple.security.network.client" = true
 
 [tool.briefcase.app.jobpilot.linux]
 requires = [
