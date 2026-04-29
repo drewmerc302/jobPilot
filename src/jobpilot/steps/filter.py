@@ -2,25 +2,14 @@ import json
 import logging
 
 import anthropic
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
+import jobpilot.llm as llm
 from jobpilot.config import Config
 from jobpilot.db import Database
+from jobpilot.llm import llm_retry
 from jobpilot.search_params import SearchParams
 
 logger = logging.getLogger(__name__)
-
-_llm_retry = retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type((anthropic.APIError, anthropic.APIConnectionError)),
-    reraise=True,
-)
 
 EVAL_TOOL = {
     "name": "evaluate_job",
@@ -64,24 +53,6 @@ def _matches_keywords(title: str, keywords: list[str]) -> bool:
     return any(kw.lower() in title_lower for kw in keywords)
 
 
-def _is_location_acceptable(
-    location: str | None, is_remote: bool | None, remote_ok: bool
-) -> bool:
-    """Remote and unknown locations pass. Non-remote jobs pass too — LLM handles the rest.
-
-    Phase 0: no geocoding. The aggregator scrapers (Phase 1) will provide cleaner
-    location data. For now, reject only explicitly non-remote jobs when remote_ok is
-    False and the location string contains 'remote' (contradictory — let it through).
-    """
-    if is_remote:
-        return True
-    if not location:
-        return True
-    if "remote" in location.lower():
-        return True
-    return True  # Non-remote jobs: pass to LLM; Phase 1 geocoding will tighten this
-
-
 def keyword_filter(jobs: list[dict], search_params: SearchParams) -> list[dict]:
     matches = []
     for job in jobs:
@@ -92,23 +63,26 @@ def keyword_filter(jobs: list[dict], search_params: SearchParams) -> list[dict]:
             job["title"], search_params.keywords
         ):
             continue
-        if not _is_location_acceptable(
-            job.get("location"), job.get("remote"), search_params.remote_ok
-        ):
-            logger.debug(
-                f"Skipping {job['id']}: location '{job.get('location')}' not acceptable"
-            )
-            continue
         matches.append(job)
     logger.info(f"Keyword filter: {len(jobs)} -> {len(matches)}")
     return matches
 
 
-@_llm_retry
+@llm_retry
 def llm_evaluate(
-    job: dict, resume_summary: str, config: Config, client: anthropic.Anthropic
+    job: dict,
+    resume_summary: str,
+    config: Config,
+    client: anthropic.Anthropic,
+    db: Database,
+    run_id: int | None = None,
 ) -> dict:
-    response = client.messages.create(
+    response = llm.call(
+        client,
+        db,
+        "filter",
+        run_id=run_id,
+        job_id=job.get("id"),
         model=config.llm_filter_model,
         max_tokens=1024,
         tools=[EVAL_TOOL],
@@ -151,6 +125,8 @@ def run_filter(
     resume_summary: str,
     search_params: SearchParams,
     config: Config,
+    client: anthropic.Anthropic | None = None,
+    run_id: int | None = None,
 ) -> list[dict]:
     jobs = [db.get_job(job_id) for job_id in new_job_ids]
     jobs = [j for j in jobs if j]
@@ -158,11 +134,12 @@ def run_filter(
     if not candidates:
         logger.info("No jobs passed keyword filter")
         return []
-    client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+    if client is None:
+        client = anthropic.Anthropic(api_key=config.anthropic_api_key)
     matches = []
     for job in candidates:
         try:
-            result = llm_evaluate(job, resume_summary, config, client)
+            result = llm_evaluate(job, resume_summary, config, client, db, run_id)
             if (
                 result.get("relevant")
                 and result.get("score", 0) >= config.relevance_threshold

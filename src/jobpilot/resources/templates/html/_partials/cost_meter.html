@@ -1,0 +1,6 @@
+<span id="cost-meter" class="cost-meter"
+      hx-get="/api/cost/meter"
+      hx-trigger="load"
+      hx-swap="outerHTML">
+  ${{ "%.2f"|format(spent) }} / ${{ "%.2f"|format(budget) }} this month
+</span>

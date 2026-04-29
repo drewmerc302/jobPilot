@@ -68,6 +68,17 @@ class Database:
                 new_status TEXT NOT NULL,
                 changed_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS cost_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                action_type TEXT NOT NULL,
+                model TEXT NOT NULL,
+                input_tokens INTEGER NOT NULL,
+                output_tokens INTEGER NOT NULL,
+                estimated_cost REAL NOT NULL,
+                run_id INTEGER REFERENCES runs(id),
+                job_id TEXT REFERENCES jobs(id),
+                recorded_at TEXT NOT NULL
+            );
         """)
         self._conn.commit()
 
@@ -76,7 +87,19 @@ class Database:
             self._conn.execute("ALTER TABLE jobs ADD COLUMN source TEXT")
             self._conn.commit()
         except sqlite3.OperationalError:
-            pass  # column already exists
+            pass
+        try:
+            self._conn.execute("ALTER TABLE runs ADD COLUMN current_stage TEXT")
+            self._conn.commit()
+        except sqlite3.OperationalError:
+            pass
+        # Close any runs that were left open by a crash
+        now = datetime.now(timezone.utc).isoformat()
+        self._conn.execute(
+            "UPDATE runs SET completed_at = ?, error = 'App crashed' WHERE completed_at IS NULL",
+            (now,),
+        )
+        self._conn.commit()
 
     def upsert_job(
         self,
@@ -454,3 +477,55 @@ class Database:
             (since_iso,),
         ).fetchone()
         return row["cnt"] or 0
+
+    def record_cost_event(
+        self,
+        *,
+        action_type: str,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        estimated_cost: float,
+        run_id: int | None = None,
+        job_id: str | None = None,
+    ) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        self._conn.execute(
+            """INSERT INTO cost_events
+               (action_type, model, input_tokens, output_tokens, estimated_cost, run_id, job_id, recorded_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                action_type,
+                model,
+                input_tokens,
+                output_tokens,
+                estimated_cost,
+                run_id,
+                job_id,
+                now,
+            ),
+        )
+        self._conn.commit()
+
+    def sum_costs_since(self, since_iso: str) -> float:
+        row = self._conn.execute(
+            "SELECT COALESCE(SUM(estimated_cost), 0.0) AS total FROM cost_events WHERE recorded_at >= ?",
+            (since_iso,),
+        ).fetchone()
+        return row["total"] or 0.0
+
+    def update_run_stage(self, run_id: int, stage: str) -> None:
+        self._conn.execute(
+            "UPDATE runs SET current_stage = ? WHERE id = ?", (stage, run_id)
+        )
+        self._conn.commit()
+
+    def sum_costs_this_month(self) -> float:
+        now = datetime.now(timezone.utc)
+        month_start = now.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        ).isoformat()
+        return self.sum_costs_since(month_start)
+
+    def close(self) -> None:
+        self._conn.close()

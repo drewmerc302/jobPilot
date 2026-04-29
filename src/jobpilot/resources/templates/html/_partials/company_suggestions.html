@@ -1,0 +1,16 @@
+{% if suggestions %}
+<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:8px">
+  <p style="margin:0 0 12px;font-weight:600;font-size:14px">Found {{ suggestions|length }} similar companies — check any to add:</p>
+  {% for s in suggestions %}
+  <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-weight:400;cursor:pointer;font-size:14px">
+    <input type="checkbox" name="extra_companies" value="{{ s.name }}" style="margin-top:3px;width:auto">
+    <span>
+      <strong>{{ s.name }}</strong>
+      <span class="muted"> — {{ s.reason }}</span>
+    </span>
+  </label>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted" style="font-size:13px;margin-top:8px">No suggestions found. Try adding more anchor companies first.</p>
+{% endif %}

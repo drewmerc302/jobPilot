@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Matches — jobPilot{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <h1 style="margin:0;font-size:22px">Your matches</h1>
+      <p class="muted" style="margin:4px 0 0">{{ matches|length }} jobs · press <kbd>?</kbd> for shortcuts</p>
+    </div>
+    <div style="display:flex;gap:10px">
+      <a href="/wizard/step/4" class="btn btn-outline btn-sm">↻ Refresh</a>
+    </div>
+  </div>
+
+  {% if not matches %}
+  <div class="card" style="text-align:center;padding:48px">
+    <p style="font-size:18px;margin:0 0 8px">No matches yet</p>
+    <p class="muted">Run a search to find jobs.</p>
+    <a href="/wizard/step/4" class="btn btn-primary" style="margin-top:16px">Start search</a>
+  </div>
+  {% else %}
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="matches-table">
+      <thead>
+        <tr>
+          <th>Company / Role</th>
+          <th>Location</th>
+          <th style="width:60px">Score</th>
+          <th>Why it fits</th>
+          <th style="width:80px">Status</th>
+          <th style="width:160px">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="matches-body">
+        {% for m in matches %}
+        {% include "_partials/match_row.html" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

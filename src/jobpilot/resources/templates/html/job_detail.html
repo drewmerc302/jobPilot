@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} at {{ job.company }} — jobPilot{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div style="margin-bottom:16px">
+    <a href="/matches" class="muted" style="font-size:14px">← Back to matches</a>
+  </div>
+
+  <div style="margin-bottom:20px">
+    <h1 style="margin:0 0 4px;font-size:22px">{{ job.title }}</h1>
+    <p style="margin:0;font-size:16px;color:var(--muted)">
+      {{ job.company }}
+      {% if job.location %} · {{ job.location }}{% endif %}
+      {% if job.salary %} · {{ job.salary }}{% endif %}
+      {% if job.remote %} · <span class="badge badge-interested">Remote</span>{% endif %}
+    </p>
+  </div>
+
+  <div class="detail-grid">
+    {# Left: description + actions #}
+    <div>
+      <div class="card" style="padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        {# Status selector #}
+        {% with job_id=job.id, status=(application.status if application else 'new') %}
+        {% include "_partials/status_badge.html" %}
+        {% endwith %}
+
+        {# Tailor button #}
+        <div id="tailor-slot-{{ job.id }}">
+          <button class="btn btn-success btn-sm tailor-btn"
+                  hx-post="/matches/{{ job.id }}/tailor"
+                  hx-target="#tailor-slot-{{ job.id }}"
+                  hx-swap="innerHTML"
+                  hx-indicator="#tailor-spinner-{{ job.id }}">
+            <span id="tailor-spinner-{{ job.id }}" class="htmx-indicator spinner"></span>
+            Tailor resume (~$0.03)
+          </button>
+        </div>
+
+        {# Interview prep placeholder #}
+        <button class="btn btn-outline btn-sm" disabled title="Coming in Pass 2">
+          Interview prep (~$0.03)
+        </button>
+
+        <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+          View posting ↗
+        </a>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 12px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Description</h3>
+        <div class="detail-description">{{ job.description or 'No description available.' }}</div>
+      </div>
+    </div>
+
+    {# Right: suggestions panel #}
+    <div>
+      {% if match and match.match_reason %}
+      <div class="card suggestions-panel">
+        <h3>Why it fits</h3>
+        <p style="font-size:14px">{{ match.match_reason }}</p>
+      </div>
+      {% endif %}
+
+      {% if suggestions.key_requirements %}
+      <div class="card suggestions-panel">
+        <h3>Key requirements</h3>
+        <ul>
+          {% for req in suggestions.key_requirements %}
+          <li>{{ req }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if suggestions.interview_talking_points %}
+      <div class="card suggestions-panel">
+        <h3>Talking points</h3>
+        <ul>
+          {% for pt in suggestions.interview_talking_points %}
+          <li>{{ pt }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if suggestions.keyword_gaps %}
+      <div class="card suggestions-panel">
+        <h3>Keyword gaps</h3>
+        <ul>
+          {% for gap in suggestions.keyword_gaps %}
+          <li>{{ gap }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if application and application.notes %}
+      <div class="card suggestions-panel">
+        <h3>Notes</h3>
+        <p style="font-size:14px;white-space:pre-wrap">{{ application.notes }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

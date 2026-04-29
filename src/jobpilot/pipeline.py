@@ -1,6 +1,8 @@
 import logging
 import time
 
+import anthropic
+
 from jobpilot.config import Config
 from jobpilot.db import Database
 from jobpilot.geocode import geocode
@@ -30,7 +32,11 @@ def get_resume_summary(resume_data: dict) -> str:
                     parts.append(f"{cat}: {', '.join(str(i) for i in items[:10])}")
     if experience := resume_data.get("experience"):
         for exp in experience[:3]:
-            parts.append(f"{exp.get('title', '')} at {exp.get('company', '')}")
+            positions = exp.get("positions") or []
+            title = exp.get("title") or (
+                positions[0].get("title", "") if positions else ""
+            )
+            parts.append(f"{title} at {exp.get('company', '')}")
     return "\n".join(parts)
 
 
@@ -40,6 +46,9 @@ def run_pipeline(
     search_params: SearchParams,
     config: Config,
     scrapers: list[BaseScraper],
+    client=None,
+    run_id: int | None = None,
+    stage_updater=None,
 ) -> dict:
     """Run the full scrape → dedup → filter pipeline.
 
@@ -47,11 +56,23 @@ def run_pipeline(
     Returns a summary dict for the in-app toast notification.
 
     resume_data is passed explicitly — storage location is a Phase 2 concern.
+    client is optional; created internally if not provided.
+    run_id is optional; created internally if not provided.
     """
+    if client is None:
+        client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+
     start_time = time.time()
-    run_id = db.start_run()
+    if run_id is None:
+        run_id = db.start_run()
+
+    def _set_stage(stage: str) -> None:
+        db.update_run_stage(run_id, stage)
+        if stage_updater:
+            stage_updater(stage)
 
     try:
+        _set_stage("scraping")
         geocode(search_params)
         resume_summary = get_resume_summary(resume_data)
 
@@ -62,10 +83,20 @@ def run_pipeline(
         )
 
         run_dedup(db)
+        _set_stage("filtering")
 
         new_job_ids = scrape_result["new_job_ids"]
-        matches = run_filter(db, new_job_ids, resume_summary, search_params, config)
+        matches = run_filter(
+            db,
+            new_job_ids,
+            resume_summary,
+            search_params,
+            config,
+            client=client,
+            run_id=run_id,
+        )
         logger.info(f"Filter complete: {len(matches)} matches")
+        _set_stage("done")
 
         duration = f"{time.time() - start_time:.1f}s"
         db.complete_run(

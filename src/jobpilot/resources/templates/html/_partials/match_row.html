@@ -1,0 +1,44 @@
+<tr class="match-row" data-job-id="{{ m.job_id }}">
+  <td>
+    <div class="match-company">{{ m.company }}</div>
+    <div class="match-title">{{ m.title }}</div>
+  </td>
+  <td class="muted" style="font-size:13px;white-space:nowrap">{{ m.location or '—' }}</td>
+  <td>
+    <span class="match-score">{{ "%.0f"|format(m.relevance_score * 100) }}%</span>
+  </td>
+  <td>
+    <span class="match-reason">{{ m.match_reason or '' }}</span>
+  </td>
+  <td>
+    {% with job_id=m.job_id, status=m.status %}
+    {% include "_partials/status_badge.html" %}
+    {% endwith %}
+  </td>
+  <td>
+    <div style="display:flex;gap:6px">
+      <div id="tailor-slot-{{ m.job_id }}">
+        {% if m.resume_path %}
+        <a href="{{ m.resume_path }}" class="btn btn-success btn-sm" download>PDF ↓</a>
+        {% else %}
+        <button class="btn btn-success btn-sm tailor-btn"
+                hx-post="/matches/{{ m.job_id }}/tailor"
+                hx-target="#tailor-slot-{{ m.job_id }}"
+                hx-swap="outerHTML"
+                hx-indicator="#tailor-spinner-{{ m.job_id }}"
+                title="Tailor resume for this job">
+          <span id="tailor-spinner-{{ m.job_id }}" class="htmx-indicator spinner"></span>
+          Tailor (T)
+        </button>
+        {% endif %}
+      </div>
+      <button class="btn btn-outline btn-sm dismiss-btn"
+              hx-post="/matches/{{ m.job_id }}/dismiss"
+              hx-target="closest tr"
+              hx-swap="outerHTML"
+              title="Dismiss this match">
+        Dismiss (X)
+      </button>
+    </div>
+  </td>
+</tr>

@@ -16,9 +16,14 @@ class Config:
     )
     llm_filter_model: str = "claude-haiku-4-5-20251001"
     llm_tailor_model: str = "claude-sonnet-4-6"
+    llm_extract_model: str = "claude-haiku-4-5-20251001"
     relevance_threshold: float = 0.6
+    data_dir: Path = field(default_factory=lambda: PROJECT_ROOT / "data")
     db_path: Path = field(default_factory=lambda: PROJECT_ROOT / "data" / "jobpilot.db")
     output_dir: Path = field(default_factory=lambda: PROJECT_ROOT / "output")
     template_dir: Path = field(
         default_factory=lambda: Path(__file__).parent / "resources" / "templates"
     )
+    adzuna_app_id: str = field(default_factory=lambda: os.getenv("ADZUNA_APP_ID", ""))
+    adzuna_app_key: str = field(default_factory=lambda: os.getenv("ADZUNA_APP_KEY", ""))
+    monthly_budget: float = 5.00

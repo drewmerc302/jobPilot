@@ -1,0 +1,47 @@
+{% if stage in ("starting", "scraping", "filtering") %}
+<div id="run-status"
+     hx-get="/api/run/{{ run_id }}/status"
+     hx-trigger="every 1s"
+     hx-swap="outerHTML">
+  <div style="display:flex;align-items:center;gap:10px;padding:16px 0">
+    <span class="spinner"></span>
+    <span>
+      {% if stage == "starting" %}Starting up…
+      {% elif stage == "scraping" %}Searching job boards…
+      {% elif stage == "filtering" %}Evaluating matches…
+      {% endif %}
+    </span>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width:{% if stage == 'starting' %}10{% elif stage == 'scraping' %}40{% else %}75{% endif %}%"></div>
+  </div>
+</div>
+
+{% elif stage == "done" %}
+<div id="run-status">
+  <div style="color:var(--green);font-weight:600;padding:16px 0;font-size:16px">
+    ✓ Search complete!
+  </div>
+  {% if result %}
+  <p class="muted">
+    {{ result.new_jobs }} new jobs found ·
+    {{ result.new_matches }} matches ·
+    took {{ result.duration }}
+  </p>
+  {% endif %}
+  <a href="/matches" class="btn btn-primary" style="margin-top:8px">View matches →</a>
+</div>
+
+{% elif stage == "error" %}
+<div id="run-status">
+  <div class="alert alert-error">
+    <strong>Search failed:</strong> {{ error or "Unknown error" }}
+  </div>
+  <a href="/wizard/step/4" class="btn btn-outline" style="margin-top:8px">Try again</a>
+</div>
+
+{% else %}
+<div id="run-status">
+  <p class="muted">Waiting for run status…</p>
+</div>
+{% endif %}

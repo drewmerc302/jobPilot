@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}jobPilot{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js"></script>
+</head>
+<body>
+  <nav class="nav">
+    <span class="nav-brand">jobPilot</span>
+    {% block nav_links %}
+    <a href="/matches">Matches</a>
+    {% endblock %}
+    <span class="nav-spacer"></span>
+    <span id="cost-meter" class="cost-meter"
+          hx-get="/api/cost/meter"
+          hx-trigger="load"
+          hx-swap="outerHTML">
+      loading…
+    </span>
+  </nav>
+
+  {% block content %}{% endblock %}
+
+  <div id="toast-container"></div>
+
+  <div id="shortcuts-overlay" class="hidden" style="
+    position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;
+    display:flex;align-items:center;justify-content:center;">
+    <div class="card" style="min-width:320px;max-width:400px">
+      <h3 style="margin:0 0 16px">Keyboard shortcuts</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <tr><td><kbd>j</kbd> / <kbd>↓</kbd></td><td>Next job</td></tr>
+        <tr><td><kbd>k</kbd> / <kbd>↑</kbd></td><td>Previous job</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Open job detail</td></tr>
+        <tr><td><kbd>T</kbd></td><td>Tailor resume</td></tr>
+        <tr><td><kbd>X</kbd></td><td>Dismiss match</td></tr>
+        <tr><td><kbd>?</kbd></td><td>Toggle this overlay</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Close / deselect</td></tr>
+      </table>
+      <button class="btn btn-outline btn-sm" style="margin-top:16px"
+              onclick="document.getElementById('shortcuts-overlay').classList.add('hidden')">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

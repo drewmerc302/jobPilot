@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block nav_links %}{% endblock %}
+{% block title %}jobPilot — Setup{% endblock %}
+
+{% block content %}
+<div class="wizard-wrap">
+
+  {# Step dots #}
+  <div class="wizard-steps">
+    {% for i in range(5) %}
+    <div class="step-dot {% if i < step %}done{% elif i == step %}active{% endif %}"></div>
+    {% endfor %}
+  </div>
+
+  {# ── Step 0: Welcome ────────────────────────────────── #}
+  {% if step == 0 %}
+  <div class="card">
+    <h1 class="wizard-title">Welcome to jobPilot</h1>
+    <p class="wizard-sub">Find jobs that actually fit you — without the noise.</p>
+    <p>Here's what we'll do:</p>
+    <ol style="color:#444;line-height:2">
+      <li>Import your resume (PDF or DOCX)</li>
+      <li>Confirm what we extracted</li>
+      <li>Set up your search</li>
+      <li>Run your first job search</li>
+    </ol>
+    <p class="muted">Takes about 5 minutes. We'll cover API costs to get you started.</p>
+    <a href="/wizard/step/1" class="btn btn-primary" style="margin-top:8px">Get Started →</a>
+  </div>
+
+  {# ── Step 1: Upload resume ──────────────────────────── #}
+  {% elif step == 1 %}
+  <div class="card">
+    <h1 class="wizard-title">Upload your resume</h1>
+    <p class="wizard-sub">PDF or DOCX — we'll read it and pull out the important parts.</p>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/wizard/step/1" enctype="multipart/form-data" id="upload-form">
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" name="file" id="file-input" accept=".pdf,.docx" required>
+        <div id="drop-label">
+          <p style="font-size:32px;margin:0">📄</p>
+          <p style="font-weight:600;margin:8px 0 4px">Drop your resume here</p>
+          <p class="muted">or click to browse — PDF or DOCX, max 5 MB</p>
+        </div>
+        <div id="file-selected" style="display:none;font-weight:600;color:#198754"></div>
+      </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:16px">
+        <button type="submit" class="btn btn-primary" id="upload-btn" disabled>
+          <span class="htmx-indicator spinner"></span>
+          Extract resume
+        </button>
+        <span class="muted">Usually takes 10–20 seconds</span>
+      </div>
+    </form>
+    <p class="muted" style="margin-top:20px">
+      Can't upload? <a href="#" onclick="alert('Paste text support coming soon.')">Paste resume text instead →</a>
+    </p>
+  </div>
+  <script>
+    const input = document.getElementById('file-input');
+    const label = document.getElementById('drop-label');
+    const selected = document.getElementById('file-selected');
+    const btn = document.getElementById('upload-btn');
+    input.addEventListener('change', function() {
+      if (this.files.length) {
+        label.style.display = 'none';
+        selected.style.display = 'block';
+        selected.textContent = '✓ ' + this.files[0].name;
+        btn.disabled = false;
+      }
+    });
+  </script>
+
+  {# ── Step 2: Confirm extraction ─────────────────────── #}
+  {% elif step == 2 %}
+  <div class="card">
+    <h1 class="wizard-title">Does this look right?</h1>
+    <p class="wizard-sub">Review and edit your details. Fields with a yellow highlight need your attention.</p>
+
+    <form method="post" action="/wizard/step/2">
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="name">Full name</label>
+          <input type="text" id="name" name="name"
+                 value="{{ profile.name or '' }}"
+                 class="{% if 'contact.name' in low_confidence or 'name' in low_confidence %}confidence-flag{% endif %}">
+        </div>
+        <div class="form-row">
+          <label for="title">Professional title</label>
+          <input type="text" id="title" name="title"
+                 value="{{ profile.title or '' }}"
+                 placeholder="e.g. Senior Software Engineer">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="email">Email</label>
+          <input type="text" id="email" name="email"
+                 value="{{ profile.email or '' }}"
+                 class="{% if 'contact.email' in low_confidence or 'email' in low_confidence %}confidence-flag{% endif %}">
+        </div>
+        <div class="form-row">
+          <label for="phone">Phone</label>
+          <input type="text" id="phone" name="phone"
+                 value="{{ profile.phone or '' }}"
+                 class="{% if 'contact.phone' in low_confidence or 'phone' in low_confidence %}confidence-flag{% endif %}">
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="location">Location</label>
+        <input type="text" id="location" name="location"
+               value="{{ profile.location or '' }}"
+               placeholder="City, State">
+      </div>
+      <div class="form-row">
+        <label for="summary">Professional summary</label>
+        <textarea id="summary" name="summary" rows="4">{{ profile.summary or '' }}</textarea>
+      </div>
+      <div class="form-row">
+        <label for="skills_text">Skills <span class="muted">(one per line or comma-separated)</span></label>
+        <textarea id="skills_text" name="skills_text" rows="5">{{ skills_text }}</textarea>
+      </div>
+
+      {% if profile.experience %}
+      <div class="form-row" style="margin-top:8px">
+        <label>Work experience <span class="muted">(extracted — edit if needed after setup)</span></label>
+        {% for exp in profile.experience[:4] %}
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:14px">
+          <strong>{{ exp.company }}</strong>
+          {% for pos in exp.positions or [] %}
+          <div style="color:var(--muted);margin-left:12px">{{ pos.title }} · {{ pos.dates }}</div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+        {% if profile.experience|length > 4 %}
+        <p class="muted">… and {{ profile.experience|length - 4 }} more</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div style="margin-top:20px;display:flex;gap:12px">
+        <button type="submit" class="btn btn-primary">Looks good →</button>
+        <a href="/wizard/step/1" class="btn btn-outline">Re-upload</a>
+      </div>
+    </form>
+  </div>
+
+  {# ── Step 3: Search setup ───────────────────────────── #}
+  {% elif step == 3 %}
+  <div class="card">
+    <h1 class="wizard-title">Set up your search</h1>
+    <p class="wizard-sub">Tell us where you are and what you're looking for.</p>
+
+    <form method="post" action="/wizard/step/3" id="search-form">
+      <h3 style="margin:0 0 12px;font-size:15px">📍 Location</h3>
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="location">Your city or zip code</label>
+          <input type="text" id="location" name="location"
+                 value="{{ sp.location if sp else '' }}" placeholder="e.g. Philadelphia, PA">
+        </div>
+        <div class="form-row">
+          <label for="radius_miles">Search radius (miles)</label>
+          <input type="number" id="radius_miles" name="radius_miles"
+                 value="{{ sp.radius_miles if sp else 25 }}" min="5" max="200">
+        </div>
+      </div>
+      <div class="form-row">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer">
+          <input type="checkbox" name="remote_ok" {% if not sp or sp.remote_ok %}checked{% endif %}>
+          Include remote jobs
+        </label>
+      </div>
+
+      <h3 style="margin:20px 0 12px;font-size:15px">🔍 Keywords</h3>
+      <div class="form-grid">
+        <div class="form-row">
+          <label for="keywords">Job titles / keywords <span class="muted">(comma-separated)</span></label>
+          <input type="text" id="keywords" name="keywords"
+                 value="{{ (sp.keywords | join(', ')) if sp else (default_keywords | join(', ')) }}"
+                 placeholder="e.g. Software Engineer, Backend Developer">
+        </div>
+        <div class="form-row">
+          <label for="seniority">Seniority filter</label>
+          <select id="seniority" name="seniority">
+            <option value="">Any level</option>
+            {% for s in ["Junior", "Mid", "Senior", "Staff", "Principal", "Lead", "Manager", "Director"] %}
+            <option value="{{ s }}" {% if sp and sp.seniority == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <h3 style="margin:20px 0 12px;font-size:15px">🏢 Target companies</h3>
+      <div class="form-row">
+        <label for="anchor_companies">Companies you want to work at <span class="muted">(one per line)</span></label>
+        <textarea id="anchor_companies" name="anchor_companies" rows="4"
+                  placeholder="Stripe&#10;Notion&#10;Linear">{{ (sp.anchor_companies | join('\n')) if sp else '' }}</textarea>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <button type="button" class="btn btn-outline btn-sm"
+                hx-post="/wizard/step/3/find-similar"
+                hx-include="#search-form"
+                hx-target="#company-suggestions"
+                hx-swap="innerHTML"
+                hx-indicator="#discover-spinner">
+          <span id="discover-spinner" class="htmx-indicator spinner"></span>
+          Find similar companies
+        </button>
+        <span class="muted" style="font-size:13px;margin-left:8px">Uses AI to suggest companies like your list</span>
+      </div>
+      <div id="company-suggestions">
+        {% if suggestions %}
+        {% include "_partials/company_suggestions.html" %}
+        {% endif %}
+      </div>
+
+      <div style="margin-top:20px">
+        <button type="submit" class="btn btn-primary">Start searching →</button>
+      </div>
+    </form>
+  </div>
+
+  {# ── Step 4: First run ──────────────────────────────── #}
+  {% elif step == 4 %}
+  <div class="card">
+    <h1 class="wizard-title">Finding your matches…</h1>
+    <p class="wizard-sub">Sit tight — we're scanning job boards and ranking results for you.</p>
+
+    <div id="run-status"
+         hx-get="/api/run/{{ run_id }}/status"
+         hx-trigger="every 1s"
+         hx-swap="outerHTML">
+      <div style="display:flex;align-items:center;gap:8px;padding:16px 0">
+        <span class="spinner"></span>
+        <span>Starting up…</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

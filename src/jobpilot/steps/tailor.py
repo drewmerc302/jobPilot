@@ -7,24 +7,13 @@ from pathlib import Path
 
 import anthropic
 import yaml
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
+import jobpilot.llm as llm
 from jobpilot.config import Config
 from jobpilot.db import Database
+from jobpilot.llm import llm_retry
 
 logger = logging.getLogger(__name__)
-
-_llm_retry = retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type((anthropic.APIError, anthropic.APIConnectionError)),
-    reraise=True,
-)
 
 ANALYSIS_TOOL = {
     "name": "resume_analysis",
@@ -88,13 +77,14 @@ def _typst_binary(config: Config) -> Path:
 def reorder_resume_yaml(resume_data: dict, reorder_map: dict) -> dict:
     result = copy.deepcopy(resume_data)
     for exp in result.get("experience", []):
-        key = f"{exp.get('company', '')} - {exp.get('title', '')}"
-        if key in reorder_map:
-            new_order = reorder_map[key]
-            existing = exp.get("bullets", [])
-            reordered = [b for b in new_order if b in existing]
-            remaining = [b for b in existing if b not in reordered]
-            exp["bullets"] = reordered + remaining
+        for pos in exp.get("positions", []):
+            key = f"{exp.get('company', '')} - {pos.get('title', '')}"
+            if key in reorder_map:
+                new_order = reorder_map[key]
+                existing = pos.get("achievements", [])
+                reordered = [b for b in new_order if b in existing]
+                remaining = [b for b in existing if b not in reordered]
+                pos["achievements"] = reordered + remaining
     return result
 
 
@@ -133,12 +123,18 @@ def apply_suggested_edits(
     return result
 
 
-@_llm_retry
+@llm_retry
 def llm_resume_analysis(
-    resume_yaml_str: str, job_description: str, config: Config
+    resume_yaml_str: str,
+    job_description: str,
+    config: Config,
+    client: anthropic.Anthropic | None = None,
+    db: Database | None = None,
+    job_id: str | None = None,
 ) -> dict:
-    client = anthropic.Anthropic(api_key=config.anthropic_api_key)
-    response = client.messages.create(
+    if client is None:
+        client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+    kwargs = dict(
         model=config.llm_tailor_model,
         max_tokens=4096,
         tools=[ANALYSIS_TOOL],
@@ -159,6 +155,10 @@ JOB DESCRIPTION:
             }
         ],
     )
+    if db is not None:
+        response = llm.call(client, db, "tailor", job_id=job_id, **kwargs)
+    else:
+        response = client.messages.create(**kwargs)
     for block in response.content:
         if block.type == "tool_use":
             return block.input
@@ -172,7 +172,12 @@ JOB DESCRIPTION:
 
 
 def ensure_analysis(
-    job: dict, resume_data: dict, db: Database, config: Config, force: bool = False
+    job: dict,
+    resume_data: dict,
+    db: Database,
+    config: Config,
+    force: bool = False,
+    client: anthropic.Anthropic | None = None,
 ) -> dict:
     """Run Sonnet resume analysis on-demand, caching results in DB.
 
@@ -193,7 +198,14 @@ def ensure_analysis(
 
     try:
         resume_yaml_str = yaml.dump(resume_data, default_flow_style=False)
-        analysis = llm_resume_analysis(resume_yaml_str, job["description"], config)
+        analysis = llm_resume_analysis(
+            resume_yaml_str,
+            job["description"],
+            config,
+            client=client,
+            db=db,
+            job_id=job.get("id"),
+        )
     except Exception:
         logger.warning(f"LLM analysis failed for {job['id']}, using cached suggestions")
         existing.setdefault("reordered_bullets", {})

@@ -1,0 +1,12 @@
+<div id="status-slot-{{ job_id }}">
+  <select class="badge badge-{{ status }}"
+          style="border:none;cursor:pointer;padding:2px 6px;font-size:12px"
+          hx-post="/matches/{{ job_id }}/status"
+          hx-target="#status-slot-{{ job_id }}"
+          hx-swap="outerHTML"
+          name="status">
+    {% for s in ["new","interested","applied","interviewing","offer","rejected","withdrawn"] %}
+    <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+</div>

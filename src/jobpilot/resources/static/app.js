@@ -1,0 +1,87 @@
+// Keyboard shortcuts for list-heavy screens (Matches, job rows)
+(function () {
+  const STATUSES = ["interested", "applied", "interviewing", "offer", "rejected", "withdrawn"];
+
+  function selectedRow() {
+    return document.querySelector(".match-row.focused");
+  }
+
+  function rows() {
+    return Array.from(document.querySelectorAll(".match-row[data-job-id]"));
+  }
+
+  function focusRow(el) {
+    rows().forEach((r) => r.classList.remove("focused"));
+    if (el) {
+      el.classList.add("focused");
+      el.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  document.addEventListener("keydown", function (e) {
+    // Ignore when typing in an input/textarea
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+
+    const all = rows();
+    const cur = selectedRow();
+    const idx = cur ? all.indexOf(cur) : -1;
+
+    if (e.key === "j" || e.key === "ArrowDown") {
+      e.preventDefault();
+      focusRow(all[Math.min(idx + 1, all.length - 1)]);
+    } else if (e.key === "k" || e.key === "ArrowUp") {
+      e.preventDefault();
+      focusRow(all[Math.max(idx - 1, 0)]);
+    } else if (e.key === "Enter" && cur) {
+      const jobId = cur.dataset.jobId;
+      if (jobId) window.location = "/matches/" + jobId;
+    } else if (e.key === "t" || e.key === "T") {
+      if (cur) {
+        const btn = cur.querySelector(".tailor-btn");
+        if (btn) btn.click();
+      }
+    } else if (e.key === "x" || e.key === "X") {
+      if (cur) {
+        const btn = cur.querySelector(".dismiss-btn");
+        if (btn) btn.click();
+      }
+    } else if (e.key === "Escape") {
+      focusRow(null);
+      document.querySelector("#shortcuts-overlay")?.classList.add("hidden");
+    } else if (e.key === "?") {
+      document.querySelector("#shortcuts-overlay")?.classList.toggle("hidden");
+    }
+  });
+
+  // Refresh cost meter when run completes
+  document.addEventListener("runComplete", function (e) {
+    const detail = e.detail || {};
+    htmx.ajax("GET", "/api/cost/meter", { target: "#cost-meter", swap: "outerHTML" });
+
+    const toast = document.getElementById("toast-container");
+    if (toast) {
+      const jobs = detail.new_jobs ?? 0;
+      const matches = detail.new_matches ?? 0;
+      const cost = (detail.spent ?? 0).toFixed(2);
+      toast.innerHTML =
+        `<div class="toast">✓ ${jobs} new jobs · ${matches} matches · $${cost} spent this month</div>`;
+      setTimeout(() => { toast.innerHTML = ""; }, 6000);
+    }
+  });
+
+  // Drag-and-drop on upload drop zones
+  document.querySelectorAll(".drop-zone").forEach(function (zone) {
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("dragover"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("dragover");
+      const input = zone.querySelector("input[type=file]");
+      if (input && e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+        zone.closest("form").submit();
+      }
+    });
+    zone.addEventListener("click", () => zone.querySelector("input[type=file]")?.click());
+  });
+})();
