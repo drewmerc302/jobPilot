@@ -23,9 +23,9 @@ async def matches_list(request: Request) -> HTMLResponse:
     spent = db.sum_costs_this_month()
     sp = request.app.state.search_params_store.load()
     return request.app.state.templates.TemplateResponse(
+        request,
         "matches.html",
         {
-            "request": request,
             "matches": matches,
             "spent": spent,
             "budget": config.monthly_budget,
@@ -60,9 +60,9 @@ async def job_detail(job_id: str, request: Request) -> HTMLResponse:
             pass
 
     return request.app.state.templates.TemplateResponse(
+        request,
         "job_detail.html",
         {
-            "request": request,
             "job": job,
             "match": match,
             "application": application,
@@ -87,9 +87,9 @@ async def update_status(
     application = db.get_application(job_id)
     job = db.get_job(job_id)
     return request.app.state.templates.TemplateResponse(
+        request,
         "_partials/status_badge.html",
         {
-            "request": request,
             "job_id": job_id,
             "status": status,
             "job": job,
@@ -130,9 +130,9 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
         if result.get("resume_pdf"):
             db.update_match_paths(job_id, resume_path=str(result["resume_pdf"]))
         return templates.TemplateResponse(
+            request,
             "_partials/tailor_result.html",
             {
-                "request": request,
                 "job_id": job_id,
                 "result": result,
                 "analysis": analysis,
@@ -179,8 +179,9 @@ async def interview_prep_match(job_id: str, request: Request) -> HTMLResponse:
         prep_path.write_text(json.dumps(prep_result, ensure_ascii=False, indent=2))
         db.update_match_paths(job_id, interview_prep_path=str(prep_path))
         return templates.TemplateResponse(
+            request,
             "_partials/interview_prep_result.html",
-            {"request": request, "prep_result": prep_result},
+            {"prep_result": prep_result},
         )
     except Exception as exc:
         logger.error(f"Interview prep failed for {job_id}: {exc}")

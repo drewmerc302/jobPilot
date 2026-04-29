@@ -46,7 +46,7 @@ async def root(request: Request):
 @router.get("/wizard/step/0", response_class=HTMLResponse)
 async def step0_get(request: Request) -> HTMLResponse:
     return request.app.state.templates.TemplateResponse(
-        "wizard.html", {"request": request, "step": 0}
+        request, "wizard.html", {"step": 0}
     )
 
 
@@ -58,7 +58,7 @@ async def step0_get(request: Request) -> HTMLResponse:
 @router.get("/wizard/step/1", response_class=HTMLResponse)
 async def step1_get(request: Request) -> HTMLResponse:
     return request.app.state.templates.TemplateResponse(
-        "wizard.html", {"request": request, "step": 1, "error": None}
+        request, "wizard.html", {"step": 1, "error": None}
     )
 
 
@@ -72,19 +72,15 @@ async def step1_post(
 
     if len(content) > _MAX_UPLOAD_BYTES:
         return templates.TemplateResponse(
-            "wizard.html",
-            {"request": request, "step": 1, "error": "File too large (max 5 MB)."},
+            request, "wizard.html", {"step": 1, "error": "File too large (max 5 MB)."}
         )
 
     filename = file.filename or ""
     if not (filename.lower().endswith(".pdf") or filename.lower().endswith(".docx")):
         return templates.TemplateResponse(
+            request,
             "wizard.html",
-            {
-                "request": request,
-                "step": 1,
-                "error": "Please upload a PDF or DOCX file.",
-            },
+            {"step": 1, "error": "Please upload a PDF or DOCX file."},
         )
 
     try:
@@ -99,8 +95,7 @@ async def step1_post(
     except Exception as exc:
         logger.error(f"Resume extraction failed: {exc}")
         return templates.TemplateResponse(
-            "wizard.html",
-            {"request": request, "step": 1, "error": f"Extraction failed: {exc}"},
+            request, "wizard.html", {"step": 1, "error": f"Extraction failed: {exc}"}
         )
 
     request.app.state.profile_store.save_draft(profile)
@@ -121,9 +116,9 @@ async def step2_get(request: Request) -> HTMLResponse:
 
     skills_flat = _flatten_skills(profile.get("skills") or {})
     return request.app.state.templates.TemplateResponse(
+        request,
         "wizard.html",
         {
-            "request": request,
             "step": 2,
             "profile": profile,
             "skills_text": "\n".join(skills_flat),
@@ -179,9 +174,9 @@ async def step3_get(request: Request) -> HTMLResponse:
                 default_keywords = [title]
 
     return request.app.state.templates.TemplateResponse(
+        request,
         "wizard.html",
         {
-            "request": request,
             "step": 3,
             "sp": sp,
             "default_keywords": default_keywords,
@@ -207,8 +202,9 @@ async def step3_find_similar(request: Request) -> HTMLResponse:
         request.app.state.db,
     )
     return request.app.state.templates.TemplateResponse(
+        request,
         "_partials/company_suggestions.html",
-        {"request": request, "suggestions": suggestions},
+        {"suggestions": suggestions},
     )
 
 
@@ -255,7 +251,7 @@ async def step4_get(request: Request) -> HTMLResponse:
         except ValueError:
             return RedirectResponse("/wizard/step/4")
         return request.app.state.templates.TemplateResponse(
-            "wizard.html", {"request": request, "step": 4, "run_id": run_id}
+            request, "wizard.html", {"step": 4, "run_id": run_id}
         )
 
     # Start a new run

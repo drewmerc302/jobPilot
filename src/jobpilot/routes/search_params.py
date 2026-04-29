@@ -53,9 +53,9 @@ async def search_params_preview(request: Request) -> HTMLResponse:
     cost_estimate = round(match_count * 0.001, 2)
 
     return templates.TemplateResponse(
+        request,
         "_partials/search_diff_preview.html",
         {
-            "request": request,
             "category": category,
             "match_count": match_count,
             "cost_estimate": cost_estimate,

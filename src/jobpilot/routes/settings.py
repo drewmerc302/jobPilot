@@ -20,9 +20,9 @@ async def settings_get(request: Request) -> HTMLResponse:
         else ("(not set)" if not key else "••••")
     )
     return request.app.state.templates.TemplateResponse(
+        request,
         "settings.html",
         {
-            "request": request,
             "key_hint": key_hint,
             "monthly_budget": config.monthly_budget,
             "saved": request.query_params.get("saved") == "1",

@@ -43,7 +43,6 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
         error = None
 
     ctx = {
-        "request": request,
         "run_id": run_id,
         "stage": stage,
         "run": run,
@@ -52,14 +51,14 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
     }
 
     if stage in ("starting", "scraping", "filtering"):
-        return templates.TemplateResponse("_partials/run_status.html", ctx)
+        return templates.TemplateResponse(request, "_partials/run_status.html", ctx)
 
     if stage == "done":
         config = request.app.state.config
         spent = db.sum_costs_this_month()
         ctx["spent"] = spent
         ctx["budget"] = config.monthly_budget
-        response = templates.TemplateResponse("_partials/run_status.html", ctx)
+        response = templates.TemplateResponse(request, "_partials/run_status.html", ctx)
         trigger_data = {
             "runComplete": {
                 "run_id": run_id,
@@ -76,7 +75,7 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
         return response
 
     # error or unknown
-    return templates.TemplateResponse("_partials/run_status.html", ctx)
+    return templates.TemplateResponse(request, "_partials/run_status.html", ctx)
 
 
 @router.get("/api/cost/meter", response_class=HTMLResponse)
@@ -86,8 +85,9 @@ async def cost_meter(request: Request) -> HTMLResponse:
     templates = request.app.state.templates
     spent = db.sum_costs_this_month()
     return templates.TemplateResponse(
+        request,
         "_partials/cost_meter.html",
-        {"request": request, "spent": spent, "budget": config.monthly_budget},
+        {"spent": spent, "budget": config.monthly_budget},
     )
 
 
