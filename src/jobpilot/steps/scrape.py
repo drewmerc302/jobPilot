@@ -22,17 +22,20 @@ def run_scrape(db: Database, scrapers: list[BaseScraper]) -> dict:
     # Fetch from all scrapers concurrently; DB writes happen serially after
     with ThreadPoolExecutor(max_workers=max(len(scrapers), 1)) as executor:
         futures = {executor.submit(_scrape_one, s): s for s in scrapers}
-        results = [f.result() for f in as_completed(futures)]
+        scraper_results = [(futures[f], f.result()) for f in as_completed(futures)]
 
-    for company, jobs, error in results:
+    for scraper, (company, jobs, error) in scraper_results:
         if error:
             logger.error(f"Failed to scrape {company}: {error}")
             failed_companies.append(company)
             continue
 
         if not jobs:
-            logger.warning(f"No jobs returned from {company}")
-            failed_companies.append(company)
+            if scraper.tracks_full_company_listing:
+                logger.warning(f"No jobs returned from {company}")
+                failed_companies.append(company)
+            else:
+                logger.info(f"{company}: 0 results (aggregator search, not a failure)")
             continue
 
         candidate_ids = [job.db_id for job in jobs]
@@ -51,10 +54,12 @@ def run_scrape(db: Database, scrapers: list[BaseScraper]) -> dict:
                 department=job.department,
                 seniority=job.seniority,
                 scraped_at=job.scraped_at,
+                source=scraper.source,
             )
         db.commit()
 
-        db.close_missing_jobs(company, current_ids=candidate_ids)
+        if scraper.tracks_full_company_listing:
+            db.close_missing_jobs(company, current_ids=candidate_ids)
 
         all_new_ids.extend(new_ids)
         total_scraped += len(jobs)

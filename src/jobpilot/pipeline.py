@@ -3,6 +3,7 @@ import time
 
 from jobpilot.config import Config
 from jobpilot.db import Database
+from jobpilot.geocode import geocode
 from jobpilot.scrapers.base import BaseScraper
 from jobpilot.search_params import SearchParams
 from jobpilot.steps.dedup import run_dedup
@@ -51,6 +52,7 @@ def run_pipeline(
     run_id = db.start_run()
 
     try:
+        geocode(search_params)
         resume_summary = get_resume_summary(resume_data)
 
         scrape_result = run_scrape(db, scrapers)

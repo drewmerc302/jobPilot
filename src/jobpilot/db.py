@@ -11,6 +11,7 @@ class Database:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._create_tables()
+        self._migrate()
 
     def _create_tables(self):
         self._conn.executescript("""
@@ -25,6 +26,7 @@ class Database:
                 description TEXT,
                 department TEXT,
                 seniority TEXT,
+                source TEXT,
                 first_seen_at TEXT NOT NULL,
                 last_seen_at TEXT NOT NULL,
                 closed_at TEXT
@@ -69,6 +71,13 @@ class Database:
         """)
         self._conn.commit()
 
+    def _migrate(self):
+        try:
+            self._conn.execute("ALTER TABLE jobs ADD COLUMN source TEXT")
+            self._conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
+
     def upsert_job(
         self,
         *,
@@ -83,18 +92,21 @@ class Database:
         description: str = None,
         department: str = None,
         seniority: str = None,
+        source: str = None,
     ):
         now = scraped_at.isoformat()
         self._conn.execute(
             """
             INSERT INTO jobs (id, company, title, url, location, remote, salary,
-                            description, department, seniority, first_seen_at, last_seen_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            description, department, seniority, source,
+                            first_seen_at, last_seen_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 last_seen_at = excluded.last_seen_at,
                 description = COALESCE(excluded.description, jobs.description),
                 salary = COALESCE(excluded.salary, jobs.salary),
                 location = COALESCE(excluded.location, jobs.location),
+                source = COALESCE(jobs.source, excluded.source),
                 closed_at = NULL
         """,
             (
@@ -108,6 +120,7 @@ class Database:
                 description,
                 department,
                 seniority,
+                source,
                 now,
                 now,
             ),

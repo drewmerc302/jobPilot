@@ -24,6 +24,11 @@ class RawJob:
 
 class BaseScraper(ABC):
     company_name: str
+    source: str
+    # True for scrapers that return a company's complete listing (e.g. Greenhouse).
+    # False for aggregator scrapers (e.g. Adzuna) where search results are a subset —
+    # absence from one run doesn't mean the job is closed.
+    tracks_full_company_listing: bool = True
 
     @abstractmethod
     def fetch_jobs(self) -> list[RawJob]: ...
