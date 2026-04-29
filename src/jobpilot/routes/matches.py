@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from jobpilot.ladder import compute_ladder
 from jobpilot.steps.interview_prep import generate_interview_prep
 from jobpilot.steps.tailor import ensure_analysis, run_tailor_for_job
 
@@ -23,6 +24,7 @@ async def matches_list(request: Request) -> HTMLResponse:
     spent = db.sum_costs_this_month()
     sp = request.app.state.search_params_store.load()
     refresh_capped = request.query_params.get("refresh_capped")
+    ladder = compute_ladder(config, db)
     return request.app.state.templates.TemplateResponse(
         request,
         "matches.html",
@@ -32,6 +34,7 @@ async def matches_list(request: Request) -> HTMLResponse:
             "budget": config.monthly_budget,
             "sp": sp,
             "refresh_capped": refresh_capped,
+            "ladder": ladder,
         },
     )
 
@@ -61,6 +64,7 @@ async def job_detail(job_id: str, request: Request) -> HTMLResponse:
         except Exception:
             pass
 
+    ladder = compute_ladder(config, db)
     return request.app.state.templates.TemplateResponse(
         request,
         "job_detail.html",
@@ -74,6 +78,7 @@ async def job_detail(job_id: str, request: Request) -> HTMLResponse:
             "budget": config.monthly_budget,
             "job_id": job["id"],
             "status": application["status"] if application else "new",
+            "ladder": ladder,
         },
     )
 
@@ -115,6 +120,11 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
     client = request.app.state.client
     templates = request.app.state.templates
 
+    if compute_ladder(config, db)["state"] == "gift_exhausted":
+        return HTMLResponse(
+            "<span class='error'>Starter credit used up. <a href='/settings'>Add your own key →</a></span>"
+        )
+
     job = db.get_job(job_id)
     if not job:
         return HTMLResponse("<span class='error'>Job not found</span>")
@@ -151,6 +161,11 @@ async def interview_prep_match(job_id: str, request: Request) -> HTMLResponse:
     config = request.app.state.config
     client = request.app.state.client
     templates = request.app.state.templates
+
+    if compute_ladder(config, db)["state"] == "gift_exhausted":
+        return HTMLResponse(
+            "<span class='error'>Starter credit used up. <a href='/settings'>Add your own key →</a></span>"
+        )
 
     job = db.get_job(job_id)
     if not job:

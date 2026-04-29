@@ -539,5 +539,24 @@ class Database:
         ).fetchone()
         return row["cnt"] or 0
 
+    def get_value_summary(self) -> dict:
+        jobs = (
+            self._conn.execute("SELECT COUNT(*) AS cnt FROM jobs").fetchone()["cnt"]
+            or 0
+        )
+        tailored = (
+            self._conn.execute(
+                "SELECT COUNT(*) AS cnt FROM matches WHERE resume_path IS NOT NULL"
+            ).fetchone()["cnt"]
+            or 0
+        )
+        applied = (
+            self._conn.execute(
+                "SELECT COUNT(*) AS cnt FROM applications WHERE status NOT IN ('new', 'interested')"
+            ).fetchone()["cnt"]
+            or 0
+        )
+        return {"jobs_reviewed": jobs, "tailored": tailored, "applications": applied}
+
     def close(self) -> None:
         self._conn.close()

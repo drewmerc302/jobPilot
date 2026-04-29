@@ -6,7 +6,11 @@
   <h1 style="margin:0 0 4px;font-size:22px">Settings</h1>
   <p class="muted" style="margin:0 0 28px">API key and spending limits</p>
 
-  {% if saved %}
+  {% if key_exhausted %}
+  <div class="alert alert-error" style="margin-bottom:20px">
+    Your starter credit is used up. <strong>Your data is safe</strong> — add your own Anthropic API key below to resume tailoring, refreshing, and interview prep.
+  </div>
+  {% elif saved %}
   <div class="alert alert-info" style="margin-bottom:20px">Settings saved.</div>
   {% endif %}
 

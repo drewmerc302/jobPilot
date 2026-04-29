@@ -29,6 +29,7 @@ class Config:
     adzuna_app_key: str = field(default_factory=lambda: os.getenv("ADZUNA_APP_KEY", ""))
     monthly_budget: float = 5.00
     total_budget: float = 10.00
+    has_byo_key: bool = False
 
     def __post_init__(self):
         overrides_path = self.data_dir / "config_overrides.json"
@@ -41,6 +42,8 @@ class Config:
                     self.monthly_budget = float(overrides["monthly_budget"])
                 if "total_budget" in overrides:
                     self.total_budget = float(overrides["total_budget"])
+                if "has_byo_key" in overrides:
+                    self.has_byo_key = bool(overrides["has_byo_key"])
             except Exception:
                 pass
 

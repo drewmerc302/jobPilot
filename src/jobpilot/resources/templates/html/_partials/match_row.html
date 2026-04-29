@@ -20,6 +20,10 @@
       <div id="tailor-slot-{{ m.job_id }}">
         {% if m.resume_path %}
         <a href="{{ m.resume_path }}" class="btn btn-success btn-sm" download>PDF ↓</a>
+        {% elif ladder and ladder.state == "gift_exhausted" %}
+        <button class="btn btn-success btn-sm" disabled style="opacity:.45;cursor:not-allowed" title="Add your own key to tailor">
+          Tailor (T)
+        </button>
         {% else %}
         <button class="btn btn-success btn-sm tailor-btn"
                 hx-post="/matches/{{ m.job_id }}/tailor"

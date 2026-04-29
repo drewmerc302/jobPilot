@@ -22,6 +22,7 @@ from fastapi.templating import Jinja2Templates
 
 from jobpilot.config import Config
 from jobpilot.db import Database
+from jobpilot.ladder import compute_ladder
 from jobpilot.pipeline import run_pipeline
 from jobpilot.scrapers.adzuna import AdzunaScraper
 from jobpilot.state import ProfileStore, SearchParamsStore
@@ -67,7 +68,10 @@ async def lifespan(app: FastAPI):
         last_completed = datetime.fromisoformat(recent[0]["completed_at"])
         if last_completed.tzinfo is None:
             last_completed = last_completed.replace(tzinfo=timezone.utc)
-        if datetime.now(timezone.utc) - last_completed > timedelta(hours=12):
+        if (
+            datetime.now(timezone.utc) - last_completed > timedelta(hours=12)
+            and compute_ladder(config, db)["state"] != "gift_exhausted"
+        ):
             _profile = app.state.profile_store.load()
             _sp = app.state.search_params_store.load()
             _client = app.state.client

@@ -26,6 +26,7 @@ async def settings_get(request: Request) -> HTMLResponse:
             "key_hint": key_hint,
             "monthly_budget": config.monthly_budget,
             "saved": request.query_params.get("saved") == "1",
+            "key_exhausted": request.query_params.get("key_exhausted") == "1",
         },
     )
 
@@ -43,12 +44,14 @@ async def settings_post(
     overrides: dict = {"monthly_budget": monthly_budget}
     if api_key.strip():
         overrides["anthropic_api_key"] = api_key.strip()
+        overrides["has_byo_key"] = True
 
     config.save_overrides(**overrides)
 
     config.monthly_budget = monthly_budget
     if api_key.strip():
         config.anthropic_api_key = api_key.strip()
+        config.has_byo_key = True
         request.app.state.client = anthropic.Anthropic(api_key=config.anthropic_api_key)
 
     return RedirectResponse("/settings?saved=1", status_code=303)

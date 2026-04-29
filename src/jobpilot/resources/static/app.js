@@ -69,6 +69,14 @@
     }
   });
 
+  // Auto-hide the 50% gift-credit banner if user already dismissed it
+  (function () {
+    if (localStorage.getItem("dismissed_ladder_50")) {
+      var b = document.getElementById("key-ladder-50");
+      if (b) b.remove();
+    }
+  })();
+
   // Drag-and-drop on upload drop zones
   document.querySelectorAll(".drop-zone").forEach(function (zone) {
     zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("dragover"); });

@@ -6,11 +6,12 @@ import logging
 from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from jobpilot.ladder import compute_ladder
+from jobpilot.pipeline import run_pipeline
 from jobpilot.scrapers.adzuna import AdzunaScraper
 from jobpilot.search_params import SearchParams
 from jobpilot.steps.discover_companies import discover_companies
 from jobpilot.steps.extract_resume import extract_resume
-from jobpilot.pipeline import run_pipeline
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -264,9 +265,11 @@ async def step4_get(request: Request) -> HTMLResponse:
         return RedirectResponse("/wizard/step/1" if not profile else "/wizard/step/3")
 
     db = request.app.state.db
+    config = request.app.state.config
+    if compute_ladder(config, db)["state"] == "gift_exhausted":
+        return RedirectResponse("/settings?key_exhausted=1", status_code=303)
     if db.count_runs_today() >= 4:
         return RedirectResponse("/matches?refresh_capped=1", status_code=303)
-    config = request.app.state.config
     client = request.app.state.client
     run_status = request.app.state.run_status
 

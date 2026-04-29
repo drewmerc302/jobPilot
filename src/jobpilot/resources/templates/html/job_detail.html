@@ -7,6 +7,8 @@
     <a href="/matches" class="muted" style="font-size:14px">← Back to matches</a>
   </div>
 
+  {% include "_partials/key_ladder_banner.html" %}
+
   <div style="margin-bottom:20px">
     <h1 style="margin:0 0 4px;font-size:22px">{{ job.title }}</h1>
     <p style="margin:0;font-size:16px;color:var(--muted)">
@@ -28,6 +30,11 @@
 
         {# Tailor button #}
         <div id="tailor-slot-{{ job.id }}">
+          {% if ladder and ladder.state == "gift_exhausted" %}
+          <button class="btn btn-success btn-sm" disabled style="opacity:.45;cursor:not-allowed" title="Add your own key to tailor">
+            Tailor resume (~$0.03)
+          </button>
+          {% else %}
           <button class="btn btn-success btn-sm tailor-btn"
                   hx-post="/matches/{{ job.id }}/tailor"
                   hx-target="#tailor-slot-{{ job.id }}"
@@ -36,9 +43,15 @@
             <span id="tailor-spinner-{{ job.id }}" class="htmx-indicator spinner"></span>
             Tailor resume (~$0.03)
           </button>
+          {% endif %}
         </div>
 
         {# Interview prep #}
+        {% if ladder and ladder.state == "gift_exhausted" %}
+        <button class="btn btn-outline btn-sm" disabled style="opacity:.45;cursor:not-allowed" title="Add your own key to generate prep">
+          {% if prep_result %}↻ Regenerate prep (~$0.03){% else %}Interview prep (~$0.03){% endif %}
+        </button>
+        {% else %}
         <button class="btn btn-outline btn-sm"
                 hx-post="/matches/{{ job.id }}/interview-prep"
                 hx-target="#prep-section"
@@ -47,6 +60,7 @@
           <span id="prep-spinner" class="htmx-indicator spinner"></span>
           {% if prep_result %}↻ Regenerate prep (~$0.03){% else %}Interview prep (~$0.03){% endif %}
         </button>
+        {% endif %}
 
         <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
           View posting ↗

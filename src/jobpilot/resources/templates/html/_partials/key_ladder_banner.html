@@ -1,0 +1,38 @@
+{% if ladder and ladder.state not in ("byo", "gift_ok") %}
+{% set s = ladder.state %}
+
+{% if s == "gift_50" %}
+<div id="key-ladder-50" class="alert alert-info" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px">
+  <span>
+    Your starter credit is halfway through.
+    {% if ladder.value_summary %}
+    So far: <strong>{{ ladder.value_summary.jobs_reviewed }} jobs reviewed</strong>{% if ladder.value_summary.tailored %}, {{ ladder.value_summary.tailored }} resumes tailored{% endif %}{% if ladder.value_summary.applications %}, {{ ladder.value_summary.applications }} applications tracked{% endif %}.
+    {% endif %}
+    When you have a few minutes, <a href="/settings" style="color:inherit;font-weight:600">add your own key →</a>
+  </span>
+  <button class="btn btn-sm" style="white-space:nowrap;flex-shrink:0"
+          onclick="localStorage.setItem('dismissed_ladder_50','1');document.getElementById('key-ladder-50').remove()">
+    Dismiss
+  </button>
+</div>
+
+{% elif s == "gift_75" %}
+<div class="alert alert-warning" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <span>75% of starter credit used (${{ "%.2f"|format(ladder.remaining) }} left). Paid actions will stop when it runs out.</span>
+  <a href="/settings" class="btn btn-sm" style="margin-left:16px;white-space:nowrap;background:var(--border);color:inherit">Set up your own key (30 sec) →</a>
+</div>
+
+{% elif s == "gift_90" %}
+<div class="alert alert-error" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <span>Almost out of starter credit — <strong>${{ "%.2f"|format(ladder.remaining) }}</strong> left. Tailor, refresh, and interview prep will stop working when it runs out.</span>
+  <a href="/settings" class="btn btn-danger btn-sm" style="margin-left:16px;white-space:nowrap">Set up your own key →</a>
+</div>
+
+{% elif s == "gift_exhausted" %}
+<div class="alert alert-error" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <span>Starter credit used up. <strong>Your data is safe.</strong> Paid actions (refresh, tailor, interview prep) are paused until you add your own key.</span>
+  <a href="/settings" class="btn btn-danger btn-sm" style="margin-left:16px;white-space:nowrap">Add your own key →</a>
+</div>
+{% endif %}
+
+{% endif %}
