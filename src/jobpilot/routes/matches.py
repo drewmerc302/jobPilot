@@ -1,5 +1,6 @@
-"""Matches list, job detail, status management, and tailoring."""
+"""Matches list, job detail, status management, tailoring, and interview prep."""
 
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from jobpilot.steps.interview_prep import generate_interview_prep
 from jobpilot.steps.tailor import ensure_analysis, run_tailor_for_job
 
 logger = logging.getLogger(__name__)
@@ -19,6 +21,7 @@ async def matches_list(request: Request) -> HTMLResponse:
     config = request.app.state.config
     matches = db.get_all_applications()
     spent = db.sum_costs_this_month()
+    sp = request.app.state.search_params_store.load()
     return request.app.state.templates.TemplateResponse(
         "matches.html",
         {
@@ -26,6 +29,7 @@ async def matches_list(request: Request) -> HTMLResponse:
             "matches": matches,
             "spent": spent,
             "budget": config.monthly_budget,
+            "sp": sp,
         },
     )
 
@@ -48,6 +52,13 @@ async def job_detail(job_id: str, request: Request) -> HTMLResponse:
         except Exception:
             pass
 
+    prep_result = None
+    if match and match.get("interview_prep_path"):
+        try:
+            prep_result = json.loads(Path(match["interview_prep_path"]).read_text())
+        except Exception:
+            pass
+
     return request.app.state.templates.TemplateResponse(
         "job_detail.html",
         {
@@ -56,6 +67,7 @@ async def job_detail(job_id: str, request: Request) -> HTMLResponse:
             "match": match,
             "application": application,
             "suggestions": suggestions,
+            "prep_result": prep_result,
             "spent": spent,
             "budget": config.monthly_budget,
             "job_id": job["id"],
@@ -129,3 +141,47 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
     except Exception as exc:
         logger.error(f"Tailor failed for {job_id}: {exc}")
         return HTMLResponse(f"<span class='error'>Tailor failed: {exc}</span>")
+
+
+@router.post("/matches/{job_id}/interview-prep", response_class=HTMLResponse)
+async def interview_prep_match(job_id: str, request: Request) -> HTMLResponse:
+    db = request.app.state.db
+    config = request.app.state.config
+    client = request.app.state.client
+    templates = request.app.state.templates
+
+    job = db.get_job(job_id)
+    if not job:
+        return HTMLResponse("<span class='error'>Job not found</span>")
+
+    profile = request.app.state.profile_store.load()
+    if not profile:
+        return HTMLResponse(
+            "<span class='error'>Profile not found — complete onboarding first</span>"
+        )
+
+    try:
+        prep_result = await asyncio.to_thread(
+            generate_interview_prep,
+            db,
+            job_id,
+            profile,
+            config,
+            client,
+        )
+        if prep_result is None:
+            return HTMLResponse(
+                "<span class='error'>Interview prep failed — please try again.</span>"
+            )
+        output_dir = config.output_dir / job_id
+        output_dir.mkdir(parents=True, exist_ok=True)
+        prep_path = output_dir / "interview_prep.json"
+        prep_path.write_text(json.dumps(prep_result, ensure_ascii=False, indent=2))
+        db.update_match_paths(job_id, interview_prep_path=str(prep_path))
+        return templates.TemplateResponse(
+            "_partials/interview_prep_result.html",
+            {"request": request, "prep_result": prep_result},
+        )
+    except Exception as exc:
+        logger.error(f"Interview prep failed for {job_id}: {exc}")
+        return HTMLResponse(f"<span class='error'>Interview prep failed: {exc}</span>")

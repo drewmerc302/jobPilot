@@ -3,7 +3,20 @@
 
 {% block content %}
 <div class="page">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  {% if spent and budget and spent >= budget * 0.8 %}
+  <div class="alert alert-error" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <span>
+      {% if spent >= budget %}
+        Monthly budget reached (${{ "%.2f"|format(spent) }} / ${{ "%.2f"|format(budget) }}). Consider raising your limit in Settings.
+      {% else %}
+        Monthly budget {{ ((spent / budget) * 100)|int }}% used (${{ "%.2f"|format(spent) }} / ${{ "%.2f"|format(budget) }}).
+      {% endif %}
+    </span>
+    <a href="/settings" class="btn btn-danger btn-sm" style="margin-left:16px;white-space:nowrap">Update limit →</a>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:{% if sp %}12px{% else %}20px{% endif %}">
     <div>
       <h1 style="margin:0;font-size:22px">Your matches</h1>
       <p class="muted" style="margin:4px 0 0">{{ matches|length }} jobs · press <kbd>?</kbd> for shortcuts</p>
@@ -12,6 +25,22 @@
       <a href="/wizard/step/4" class="btn btn-outline btn-sm">↻ Refresh</a>
     </div>
   </div>
+
+  {% if sp %}
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
+    <span style="color:var(--muted)">🔍</span>
+    {% if sp.keywords %}<span><strong>{{ sp.keywords|join(", ") }}</strong></span>{% endif %}
+    {% if sp.location %}<span class="muted">·</span><span>{{ sp.location }}{% if sp.radius_miles %} +{{ sp.radius_miles }}mi{% endif %}</span>{% endif %}
+    {% if sp.remote_ok %}<span class="muted">·</span><span class="badge badge-interested">Remote OK</span>{% endif %}
+    {% if sp.seniority %}<span class="muted">·</span><span>{{ sp.seniority }}</span>{% endif %}
+    {% if sp.anchor_companies %}<span class="muted">·</span><span>{{ sp.anchor_companies|length }} compan{% if sp.anchor_companies|length == 1 %}y{% else %}ies{% endif %}</span>{% endif %}
+    <span style="flex:1"></span>
+    <button class="btn btn-outline btn-sm"
+            onclick="document.getElementById('search-edit-dialog').showModal()">
+      Edit search
+    </button>
+  </div>
+  {% endif %}
 
   {% if not matches %}
   <div class="card" style="text-align:center;padding:48px">
@@ -41,4 +70,80 @@
   </div>
   {% endif %}
 </div>
+
+{% if sp %}
+<dialog id="search-edit-dialog" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;max-width:520px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15)">
+  <div style="padding:20px 24px 0;border-bottom:1px solid var(--border);margin-bottom:0">
+    <h3 style="margin:0 0 16px;font-size:16px;font-weight:700">Edit search</h3>
+  </div>
+  <form id="search-edit-form" method="post" action="/search-params/save"
+        style="padding:20px 24px">
+    <div class="form-row">
+      <label for="se-keywords">Keywords (comma-separated)</label>
+      <input type="text" id="se-keywords" name="keywords"
+             value="{{ sp.keywords|join(', ') }}">
+    </div>
+    <div class="form-grid" style="margin-bottom:16px">
+      <div>
+        <label for="se-location">Location</label>
+        <input type="text" id="se-location" name="location" value="{{ sp.location }}">
+      </div>
+      <div>
+        <label for="se-radius">Radius (miles)</label>
+        <input type="number" id="se-radius" name="radius_miles"
+               value="{{ sp.radius_miles }}" min="5" max="100" step="5">
+      </div>
+    </div>
+    <div class="form-grid" style="margin-bottom:16px">
+      <div>
+        <label for="se-seniority">Seniority</label>
+        <select id="se-seniority" name="seniority">
+          <option value="">Any</option>
+          {% for level in ["Entry", "Mid", "Senior", "Lead", "Manager", "Director", "Executive"] %}
+          <option value="{{ level }}" {% if sp.seniority == level %}selected{% endif %}>{{ level }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding-top:24px">
+        <input type="checkbox" id="se-remote" name="remote_ok"
+               {% if sp.remote_ok %}checked{% endif %}
+               style="width:auto">
+        <label for="se-remote" style="margin:0;font-weight:400">Remote OK</label>
+      </div>
+    </div>
+    <div class="form-row">
+      <label for="se-anchors">Anchor companies (one per line)</label>
+      <textarea id="se-anchors" name="anchor_companies" rows="4">{{ sp.anchor_companies|join('\n') }}</textarea>
+    </div>
+
+    <div id="diff-preview" style="margin-bottom:16px"></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="submit" class="btn btn-primary btn-sm">Save changes</button>
+      <button type="button" class="btn btn-outline btn-sm"
+              hx-post="/search-params/preview"
+              hx-include="#search-edit-form"
+              hx-target="#diff-preview"
+              hx-swap="innerHTML">
+        Preview impact
+      </button>
+      <button type="button" class="btn btn-outline btn-sm"
+              onclick="document.getElementById('search-edit-dialog').close()">
+        Cancel
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  (function () {
+    var dlg = document.getElementById("search-edit-dialog");
+    if (dlg) {
+      dlg.addEventListener("click", function (e) {
+        if (e.target === dlg) dlg.close();
+      });
+    }
+  })();
+</script>
+{% endif %}
 {% endblock %}

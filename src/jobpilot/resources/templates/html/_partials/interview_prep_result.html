@@ -1,0 +1,63 @@
+{% if prep_result %}
+<div class="card" style="margin-top:16px">
+  <h3 style="margin:0 0 16px;font-size:15px;font-weight:700">Interview Prep</h3>
+
+  {% if prep_result.talking_points %}
+  <div style="margin-bottom:20px">
+    <h4 style="margin:0 0 8px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Key talking points</h4>
+    <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.8">
+      {% for pt in prep_result.talking_points %}
+      <li>{{ pt }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if prep_result.red_flags %}
+  <div style="margin-bottom:20px;padding:12px 16px;background:#fff9e6;border:1px solid var(--yellow);border-radius:var(--radius)">
+    <h4 style="margin:0 0 8px;font-size:13px;font-weight:700;color:#664d03;text-transform:uppercase;letter-spacing:.5px">Gaps to prepare for</h4>
+    <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.8;color:#664d03">
+      {% for flag in prep_result.red_flags %}
+      <li>{{ flag }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if prep_result.star_stories %}
+  <div style="margin-bottom:20px">
+    <h4 style="margin:0 0 8px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Predicted questions &amp; STAR stories</h4>
+    {% for story in prep_result.star_stories %}
+    <details style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
+      <summary style="padding:10px 14px;cursor:pointer;font-size:14px;font-weight:500;list-style:none;display:flex;justify-content:space-between;align-items:center">
+        <span>{{ story.question }}</span>
+        <span style="color:var(--muted);font-size:12px;margin-left:8px;flex-shrink:0">▸ STAR</span>
+      </summary>
+      <div style="padding:0 14px 12px;font-size:14px;border-top:1px solid var(--border)">
+        {% if story.resume_bullet %}
+        <p style="margin:10px 0 8px;font-size:12px;color:var(--muted);font-style:italic">From your resume: {{ story.resume_bullet }}</p>
+        {% endif %}
+        <table style="width:100%;border-collapse:collapse;line-height:1.6">
+          <tr><td style="padding:4px 8px 4px 0;font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;white-space:nowrap;vertical-align:top">S</td><td style="padding:4px 0">{{ story.situation }}</td></tr>
+          <tr><td style="padding:4px 8px 4px 0;font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;white-space:nowrap;vertical-align:top">T</td><td style="padding:4px 0">{{ story.task }}</td></tr>
+          <tr><td style="padding:4px 8px 4px 0;font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;white-space:nowrap;vertical-align:top">A</td><td style="padding:4px 0">{{ story.action }}</td></tr>
+          <tr><td style="padding:4px 8px 4px 0;font-weight:600;font-size:12px;color:var(--muted);text-transform:uppercase;white-space:nowrap;vertical-align:top">R</td><td style="padding:4px 0">{{ story.result }}</td></tr>
+        </table>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if prep_result.likely_questions %}
+  <div>
+    <h4 style="margin:0 0 8px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Additional likely questions</h4>
+    <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.8">
+      {% for q in prep_result.likely_questions %}
+      <li>{{ q }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% endif %}

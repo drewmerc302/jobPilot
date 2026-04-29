@@ -3,7 +3,8 @@
 import json
 import logging
 
-from fastapi import APIRouter, Request
+import anthropic
+from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 
 logger = logging.getLogger(__name__)
@@ -88,3 +89,26 @@ async def cost_meter(request: Request) -> HTMLResponse:
         "_partials/cost_meter.html",
         {"request": request, "spent": spent, "budget": config.monthly_budget},
     )
+
+
+@router.post("/api/test-key", response_class=HTMLResponse)
+async def test_key(api_key: str = Form(...)) -> HTMLResponse:
+    """Validate an Anthropic API key with a minimal call. Returns an inline status span."""
+    key = api_key.strip()
+    if not key:
+        return HTMLResponse("<span class='error'>Enter a key to test.</span>")
+    try:
+        client = anthropic.Anthropic(api_key=key)
+        client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1,
+            messages=[{"role": "user", "content": "hi"}],
+        )
+        return HTMLResponse(
+            "<span style='color:var(--green);font-size:13px'>✓ Key is valid</span>"
+        )
+    except anthropic.AuthenticationError:
+        return HTMLResponse("<span class='error'>✗ Invalid key</span>")
+    except Exception as exc:
+        logger.warning(f"test-key failed: {exc}")
+        return HTMLResponse(f"<span class='error'>✗ {exc}</span>")

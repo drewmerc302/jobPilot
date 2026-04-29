@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Settings — jobPilot{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width:560px">
+  <h1 style="margin:0 0 4px;font-size:22px">Settings</h1>
+  <p class="muted" style="margin:0 0 28px">API key and spending limits</p>
+
+  {% if saved %}
+  <div class="alert alert-info" style="margin-bottom:20px">Settings saved.</div>
+  {% endif %}
+
+  <form method="post" action="/settings">
+    <div class="card">
+      <h3 style="margin:0 0 16px;font-size:15px;font-weight:700">Anthropic API key</h3>
+
+      <div class="form-row">
+        <label for="api_key">API key</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="password" id="api_key" name="api_key"
+                 placeholder="{{ key_hint }}"
+                 autocomplete="off"
+                 style="font-family:monospace;flex:1">
+          <button type="button" class="btn btn-outline btn-sm"
+                  onclick="var f=document.getElementById('api_key');f.type=f.type==='password'?'text':'password'">
+            Show
+          </button>
+        </div>
+        <p class="muted" style="margin:4px 0 0">Leave blank to keep the current key. Starts with <code>sk-ant-</code>.</p>
+      </div>
+
+      <div class="form-row" style="margin-bottom:0">
+        <div id="test-key-result"></div>
+        <button type="button" class="btn btn-outline btn-sm"
+                hx-post="/api/test-key"
+                hx-include="#api_key"
+                hx-target="#test-key-result"
+                hx-swap="innerHTML">
+          Test key
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 16px;font-size:15px;font-weight:700">Spending limit</h3>
+      <div class="form-row" style="margin-bottom:0">
+        <label for="monthly_budget">Monthly budget ($)</label>
+        <input type="number" id="monthly_budget" name="monthly_budget"
+               value="{{ '%.2f'|format(monthly_budget) }}"
+               min="0.50" max="50.00" step="0.50"
+               style="max-width:120px">
+        <p class="muted" style="margin:4px 0 0">jobPilot will warn you when you approach this limit. Range: $0.50 – $50.00.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center">
+      <button type="submit" class="btn btn-primary">Save settings</button>
+      <a href="/matches" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

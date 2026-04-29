@@ -38,9 +38,14 @@
           </button>
         </div>
 
-        {# Interview prep placeholder #}
-        <button class="btn btn-outline btn-sm" disabled title="Coming in Pass 2">
-          Interview prep (~$0.03)
+        {# Interview prep #}
+        <button class="btn btn-outline btn-sm"
+                hx-post="/matches/{{ job.id }}/interview-prep"
+                hx-target="#prep-section"
+                hx-swap="innerHTML"
+                hx-indicator="#prep-spinner">
+          <span id="prep-spinner" class="htmx-indicator spinner"></span>
+          {% if prep_result %}↻ Regenerate prep (~$0.03){% else %}Interview prep (~$0.03){% endif %}
         </button>
 
         <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
@@ -103,6 +108,10 @@
       </div>
       {% endif %}
     </div>
+  </div>
+
+  <div id="prep-section">
+    {% include "_partials/interview_prep_result.html" %}
   </div>
 </div>
 {% endblock %}

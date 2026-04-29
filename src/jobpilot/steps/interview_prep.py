@@ -11,6 +11,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from jobpilot import llm as llm_module
 from jobpilot.config import Config
 from jobpilot.db import Database
 
@@ -101,9 +102,13 @@ def _web_research(company: str) -> str:
 
 @_llm_retry
 def _call_llm(
-    job: dict, resume_data: dict, config: Config, extra_context: str = ""
+    job: dict,
+    resume_data: dict,
+    config: Config,
+    client: anthropic.Anthropic,
+    db: Database,
+    extra_context: str = "",
 ) -> dict:
-    client = anthropic.Anthropic(api_key=config.anthropic_api_key)
     role = _most_recent_role(resume_data)
     resume_text = yaml.dump(resume_data, default_flow_style=False)[:4000]
 
@@ -123,7 +128,11 @@ Candidate's resume (YAML):
         "\nGenerate structured interview prep content using the interview_prep tool."
     )
 
-    response = client.messages.create(
+    response = llm_module.call(
+        client,
+        db,
+        "interview_prep",
+        job_id=job.get("id"),
         model=config.llm_tailor_model,
         max_tokens=2000,
         tools=[PREP_TOOL],
@@ -143,13 +152,13 @@ def generate_interview_prep(
     job_id: str,
     resume_data: dict,
     config: Config,
+    client: anthropic.Anthropic,
     research: bool = False,
 ) -> dict | None:
     """Generate interview prep content for a job.
 
-    resume_data is passed explicitly — storage location is a Phase 2 concern.
     Returns a dict of prep content (likely_questions, star_stories, talking_points,
-    red_flags), or None on failure. The caller (Phase 2 FastAPI) renders this as HTML.
+    red_flags), or None on failure. The caller renders this as HTML.
     PDF export is deferred to v1.x.
     """
     job = db.get_job(job_id)
@@ -163,7 +172,7 @@ def generate_interview_prep(
         extra_context = _web_research(job["company"])
 
     try:
-        return _call_llm(dict(job), resume_data, config, extra_context)
+        return _call_llm(dict(job), resume_data, config, client, db, extra_context)
     except Exception as e:
         logger.error(f"interview_prep: LLM call failed for {job_id}: {e}")
         return None
