@@ -16,6 +16,7 @@ from jobpilot.fetch_description import fetch_full_description, is_snippet
 from jobpilot.ladder import compute_ladder
 from jobpilot.pipeline import run_pipeline
 from jobpilot.scrapers.adzuna import AdzunaScraper
+from jobpilot.scrapers.greenhouse import probe_greenhouse
 from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
 from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.steps.interview_prep import generate_interview_prep
@@ -117,6 +118,18 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
         scrapers.append(JooblesScraper(sp))
     if AdzunaScraper.is_configured():
         scrapers.append(AdzunaScraper(sp))
+
+    # Probe Greenhouse for each anchor company in parallel
+    if sp.anchor_companies:
+        probe_results = await asyncio.gather(
+            *[asyncio.to_thread(probe_greenhouse, c) for c in sp.anchor_companies],
+            return_exceptions=True,
+        )
+        for r in probe_results:
+            if isinstance(r, Exception):
+                logger.warning(f"Greenhouse probe raised: {r}")
+            elif r is not None:
+                scrapers.append(r)
 
     def update_stage(stage: str) -> None:
         run_status[run_id]["stage"] = stage
