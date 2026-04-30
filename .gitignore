@@ -62,6 +62,9 @@ var/
 .venv/
 venv/
 
+# uv lock file (project uses Briefcase/pip, not uv)
+uv.lock
+
 # Runtime data (SQLite DB, config overrides)
 data/
 
