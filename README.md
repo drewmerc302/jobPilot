@@ -1,39 +1,121 @@
 # jobPilot
 
-LLM-assisted job tracker, distributed as a double-clickable native app for macOS, Windows, and Linux.
+A local-first job search tool that finds, ranks, and tailors job matches using your resume and Claude AI. Runs entirely on your machine — your resume data never leaves your computer.
 
-## Status: packaging spike
+## What it does
 
-Currently a Briefcase-based proof of concept verifying that:
+- **Pulls job listings** from Adzuna (and optionally other boards) based on your search criteria
+- **Scores and ranks matches** against your resume using AI, surfacing the jobs most worth your time
+- **Tailors your resume** for a specific role with one click — highlights relevant experience, flags gaps, suggests edits
+- **Tracks applications** with a lightweight status tracker (New → Applied → Interviewing → Offer → Rejected)
+- **Edits your resume in-place** — update contact info, summary, skills, and experience without leaving the app, with an AI-assisted summary rewrite helper
 
-- A FastAPI server can run inside a bundled `.app`
-- A non-Python binary (Typst) can be vendored into the bundle and invoked at runtime
-- The full pipeline produces a signed `.dmg` for macOS distribution
+## How it works
 
-The actual jobTracker functionality (scrapers, LLM filter, resume tailoring, etc.) is **not yet ported** from `~/workspace/jobTracker/`. See `project_shareable_redesign.md` memory for the phased plan.
+jobPilot runs a local FastAPI server and opens in your browser. A system tray icon keeps it running in the background and auto-refreshes job listings every 12 hours.
 
-## Building locally (macOS)
+All data — your resume, job listings, match scores — lives in `~/.jobpilot/` on your machine. LLM calls go directly to the Anthropic API using your own key.
 
-Requirements: Python 3.12+, [`uv`](https://docs.astral.sh/uv/), Briefcase (`uv tool install briefcase`).
+## Setup
+
+### Prerequisites
+
+- Python 3.11+
+- An [Anthropic API key](https://console.anthropic.com/)
+- An [Adzuna API key](https://developer.adzuna.com/) (free tier works)
+
+### Install
 
 ```bash
-# Fetch the bundled Typst binaries (one-time, ~120 MB across all platforms)
-./scripts/fetch_typst.sh
-
-# Generate the .app bundle layout
-briefcase create macOS
-
-# Compile the bundle
-briefcase build macOS
-
-# Run it (server on http://127.0.0.1:8765, browser opens automatically)
-briefcase run macOS
-
-# Produce a distributable .dmg
-briefcase package macOS --adhoc-sign           # for local testing
-briefcase package macOS --identity "Developer ID Application: ..."  # for distribution
+git clone https://github.com/drewmerc302/jobPilot.git
+cd jobPilot
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -e .
 ```
 
-## Code signing
+### Configure
 
-For distribution to other Macs, the `.app` must be signed with a **Developer ID Application** certificate (not "Apple Development", which is dev-only). Create one at <https://developer.apple.com/account/resources/certificates/list>.
+Create `~/.jobpilot/.env`:
+
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+ADZUNA_APP_ID=your_app_id
+ADZUNA_APP_KEY=your_app_key
+```
+
+### Run
+
+```bash
+python -m jobpilot
+```
+
+The app opens in your browser at `http://127.0.0.1:8765`. On first launch, a setup wizard walks you through uploading your resume and configuring your search.
+
+## First run
+
+1. **Upload your resume** — PDF or DOCX. Claude extracts your experience, skills, and contact info.
+2. **Confirm the extraction** — review and correct anything that looks off.
+3. **Set up your search** — location, radius, keywords, target companies.
+4. **Get your first matches** — ranked by fit, ready to review.
+
+## Features
+
+### Job matching
+Jobs are scored against your resume on relevance, seniority fit, and keyword overlap. The matches list shows score, company, title, salary, and location at a glance.
+
+### Resume tailoring
+Open any job and click **Generate Tailored Resume**. Claude analyzes the job description against your profile and returns:
+- Key requirements and how well you match each
+- Suggested resume edits specific to this role
+- A gap analysis — skills or experience worth addressing in a cover letter
+
+### Resume editor
+The **Resume** page (`/profile`) lets you edit your stored resume data directly:
+- Update contact info, summary, skills, and structured experience
+- AI summary rewrite: describe your recent accomplishments, get a polished 2–5 sentence summary
+- Add new experience in plain language — Claude structures it into the correct format on save
+
+### Application tracking
+Track application status per job. The status dropdown on each job detail page moves a listing through your pipeline.
+
+## Packaging
+
+jobPilot uses [Briefcase](https://briefcase.readthedocs.io/) for native packaging.
+
+**macOS:**
+```bash
+briefcase build macOS
+briefcase run macOS
+```
+
+**Windows** — requires a Windows machine or CI. See [`docs/WINDOWS_BUILD.md`](docs/WINDOWS_BUILD.md) for full instructions including a ready-to-use GitHub Actions workflow.
+
+## Cost
+
+All AI features use your Anthropic API key and are billed to your account. Rough estimates:
+- Resume extraction (one-time): ~$0.05
+- Match scoring per run: ~$0.01–0.03 depending on result count
+- Tailor analysis per job: ~$0.05–0.10
+- Summary rewrite: ~$0.03
+- New experience parse: ~$0.01
+
+A cost meter in the nav bar shows your running total.
+
+## Tech stack
+
+- **Backend:** FastAPI + uvicorn
+- **Frontend:** Jinja2 templates + HTMX (no build step)
+- **Database:** SQLite
+- **AI:** Anthropic Claude (Sonnet for tailoring/summaries, Haiku for extraction)
+- **Job data:** Adzuna API
+- **Packaging:** Briefcase (macOS app bundle, Windows MSI)
+- **System tray:** pystray + Pillow
+
+## Data & privacy
+
+Everything stays local. Your resume is stored in `~/.jobpilot/profile.json`. Job listings are cached in `~/.jobpilot/jobpilot.db`. The only outbound calls are to the Anthropic API (for AI features) and Adzuna (for job listings).
+
+## License
+
+MIT
