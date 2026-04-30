@@ -1,74 +1,90 @@
-// Generic resume template for jobPilot.
-// Invoked by tailor.py: typst compile resume.typ out.pdf --input resume=<path/to/resume.yaml>
-//
-// TODO (Phase 2): flesh out full layout. This is the minimal scaffold to establish
-// the correct invocation contract (sys.inputs / yaml()) before the FastAPI layer is built.
+// jobPilot resume template
+// Invoked: typst compile resume.typ out.pdf --input resume=<path/to/resume.yaml>
 
 #let data = yaml(sys.inputs.at("resume"))
 
 #set page(paper: "us-letter", margin: (x: 1.25cm, y: 1.5cm))
-#set text(font: "Linux Libertine", size: 11pt)
-#set heading(numbering: none)
+#set text(size: 10.5pt)
+#set par(leading: 0.55em)
 
-// Name + contact
+// ── Header ───────────────────────────────────────────────────────
 #align(center)[
   #text(size: 18pt, weight: "bold")[#data.at("name", default: "")]
   #linebreak()
   #text(size: 9pt, fill: luma(80))[
-    #data.at("email", default: "")
-    #if data.at("phone", default: "") != "" [ · #data.at("phone", default: "") ]
-    #if data.at("location", default: "") != "" [ · #data.at("location", default: "") ]
+    #let parts = ()
+    #if data.at("email", default: "") != "" { parts.push(data.at("email")) }
+    #if data.at("phone", default: "") != "" { parts.push(data.at("phone")) }
+    #if data.at("location", default: "") != "" { parts.push(data.at("location")) }
+    #if data.at("linkedin", default: "") != "" { parts.push(data.at("linkedin")) }
+    #parts.join("  ·  ")
   ]
 ]
+#line(length: 100%, stroke: 0.5pt + luma(180))
+#v(0.3em)
 
-#line(length: 100%, stroke: 0.5pt + luma(150))
-#v(0.5em)
-
-// Summary
+// ── Summary ──────────────────────────────────────────────────────
 #if data.at("summary", default: "") != "" [
-  #text(size: 9pt)[#data.at("summary", default: "")]
-  #v(0.5em)
+  #text(size: 9.5pt)[#data.at("summary")]
+  #v(0.4em)
+  #line(length: 100%, stroke: 0.3pt + luma(200))
+  #v(0.3em)
 ]
 
-// Experience
-#if data.at("experience", default: ()).len() > 0 [
+// ── Experience ───────────────────────────────────────────────────
+#let experience = data.at("experience", default: ())
+#if experience.len() > 0 [
   == Experience
 
-  #for exp in data.at("experience", default: ()) [
-    #grid(
-      columns: (1fr, auto),
-      [*#exp.at("company", default: "")* — #exp.at("title", default: "")],
-      [#text(size: 9pt, fill: luma(80))[#exp.at("dates", default: "")]],
-    )
-    #for bullet in exp.at("bullets", default: ()) [
-      - #bullet
+  #for exp in experience [
+    #let positions = exp.at("positions", default: ())
+    #for pos in positions [
+      #grid(
+        columns: (1fr, auto),
+        gutter: 4pt,
+        [*#exp.at("company", default: "")* — #pos.at("title", default: "")],
+        [#text(size: 9pt, fill: luma(80))[#pos.at("dates", default: "")]],
+      )
+      #if exp.at("location", default: "") != "" [
+        #text(size: 9pt, fill: luma(100))[#exp.at("location", default: "")]
+        #v(0.1em)
+      ]
+      #for bullet in pos.at("achievements", default: ()) [
+        #set text(size: 9.5pt)
+        - #bullet
+      ]
+      #v(0.25em)
     ]
-    #v(0.3em)
   ]
 ]
 
-// Skills
-#if data.at("skills", default: none) != none [
+// ── Skills ───────────────────────────────────────────────────────
+#let skills = data.at("skills", default: none)
+#if skills != none [
   == Skills
 
-  #let skills = data.at("skills", default: ())
   #if type(skills) == array [
-    #skills.join(", ")
+    #text(size: 9.5pt)[#skills.join(", ")]
   ] else [
     #for (cat, items) in skills [
-      *#cat:* #items.join(", ") \
+      #text(size: 9.5pt)[*#cat:* #items.join(", ")]
+      \
     ]
   ]
-  #v(0.5em)
+  #v(0.3em)
 ]
 
-// Education
-#if data.at("education", default: ()).len() > 0 [
+// ── Education ────────────────────────────────────────────────────
+#let education = data.at("education", default: ())
+#if education.len() > 0 [
   == Education
 
-  #for edu in data.at("education", default: ()) [
-    *#edu.at("school", default: "")* — #edu.at("degree", default: "")
-    #if edu.at("year", default: "") != "" [ (#edu.at("year", default: "")) ]
-    \
+  #for edu in education [
+    #grid(
+      columns: (1fr, auto),
+      gutter: 4pt,
+      [*#edu.at("school", default: "")* — #edu.at("degree", default: "")],
+      [#text(size: 9pt, fill: luma(80))[#edu.at("year", default: "")]],
+    )
   ]
 ]

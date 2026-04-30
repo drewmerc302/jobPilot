@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from jobpilot.ladder import compute_ladder
 from jobpilot.steps.interview_prep import generate_interview_prep
@@ -143,14 +143,17 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
         result = await asyncio.to_thread(
             run_tailor_for_job, job, analysis, profile, output_dir, config
         )
+        resume_url = None
         if result.get("resume_pdf"):
-            db.update_match_paths(job_id, resume_path=str(result["resume_pdf"]))
+            rel = Path(result["resume_pdf"]).relative_to(config.output_dir)
+            resume_url = f"/output/{rel}"
+            db.update_match_paths(job_id, resume_path=resume_url)
         return templates.TemplateResponse(
             request,
             "_partials/tailor_result.html",
             {
                 "job_id": job_id,
-                "result": result,
+                "result": {**result, "resume_pdf": resume_url},
                 "analysis": analysis,
             },
         )
@@ -207,3 +210,15 @@ async def interview_prep_match(job_id: str, request: Request) -> HTMLResponse:
     except Exception as exc:
         logger.error(f"Interview prep failed for {job_id}: {exc}")
         return HTMLResponse(f"<span class='error'>Interview prep failed: {exc}</span>")
+
+
+@router.get("/output/{path:path}")
+async def serve_output_file(path: str, request: Request):
+    """Serve files from the output directory (tailored resumes, interview prep)."""
+    output_dir = request.app.state.config.output_dir.resolve()
+    file_path = (output_dir / path).resolve()
+    if not str(file_path).startswith(str(output_dir)):
+        return HTMLResponse("Forbidden", status_code=403)
+    if not file_path.exists():
+        return HTMLResponse("Not found", status_code=404)
+    return FileResponse(file_path)
