@@ -30,6 +30,11 @@
       Remote status not specified — verify in full listing
     </p>
     {% endif %}
+    <div style="margin-top:10px">
+      <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+        Full Job Listing ↗
+      </a>
+    </div>
   </div>
 
   <div class="detail-grid">
@@ -151,6 +156,28 @@
         </div>
         <div class="detail-description" style="margin-top:12px">{{ (job.description or '') | clean_html or 'No description available.' }}</div>
       </div>
+
+      <details style="margin-top:8px">
+        <summary style="font-size:12px;color:var(--muted);cursor:pointer;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px">▸</span> Paste full description for better analysis
+        </summary>
+        <div class="card" style="margin-top:6px;padding:14px 16px">
+          <p class="muted" style="font-size:12px;margin:0 0 10px">
+            Copy the full job description from the
+            <a href="{{ job.url }}" target="_blank" rel="noopener">listing page ↗</a>
+            and paste it here, then re-analyze.
+          </p>
+          <form method="post" action="/matches/{{ job.id }}/description"
+                onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.textContent='Saving…'">
+            <textarea name="description" rows="10"
+                      style="width:100%;font-size:12px;resize:vertical;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit">{{ (job.description or '') | clean_html }}</textarea>
+            <button type="submit" class="btn btn-outline btn-sm" style="margin-top:8px;width:100%">
+              Save description
+            </button>
+            <p class="muted" style="font-size:11px;margin:6px 0 0">After saving, click Re-analyze above.</p>
+          </form>
+        </div>
+      </details>
     </div>
   </div>
 
