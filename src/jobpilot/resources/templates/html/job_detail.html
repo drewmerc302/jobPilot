@@ -25,7 +25,7 @@
       {% if job.salary %} · {{ job.salary }}{% endif %}
       {% if job.remote %} · <span class="badge badge-interested">Remote-friendly</span>{% endif %}
     </p>
-    {% if not job.remote %}
+    {% if not job.remote and not (job.description and 'remote' in (job.description | lower)) %}
     <p style="margin:6px 0 0;font-size:12px;color:#856404;background:#fff3cd;padding:3px 10px;border-radius:4px;display:inline-block;border:1px solid #ffe08a">
       Remote status not specified — verify in full listing
     </p>
