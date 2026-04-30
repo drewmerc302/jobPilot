@@ -81,9 +81,12 @@
 
         {# Row 1: status + generated PDF link #}
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          {% with job_id=job.id, status=(application.status if application else 'new') %}
-          {% include "_partials/status_badge.html" %}
-          {% endwith %}
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:var(--muted);white-space:nowrap">Application status</span>
+            {% with job_id=job.id, status=(application.status if application else 'new') %}
+            {% include "_partials/status_badge.html" %}
+            {% endwith %}
+          </div>
 
           <div id="detail-tailor-slot">
             {% if match and match.resume_path %}
