@@ -18,6 +18,53 @@ from jobpilot.steps.extract_resume import extract_resume
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+_SENIORITY_PREFIXES = {
+    "senior",
+    "sr",
+    "jr",
+    "junior",
+    "lead",
+    "staff",
+    "principal",
+    "associate",
+    "entry",
+    "mid",
+    "distinguished",
+    "fellow",
+}
+
+
+def _core_title(title: str) -> str:
+    """Strip leading seniority words so 'Senior Engineering Manager' → 'Engineering Manager'."""
+    words = title.split()
+    while words and words[0].lower().rstrip(".") in _SENIORITY_PREFIXES:
+        words = words[1:]
+    return " ".join(words) if words else title
+
+
+def _default_keywords_from_profile(profile: dict) -> list[str]:
+    """Derive search-friendly keyword suggestions from the extracted resume."""
+    seen: set[str] = set()
+    keywords: list[str] = []
+
+    candidates: list[str] = []
+    if profile.get("title"):
+        candidates.append(profile["title"].strip())
+    for exp in (profile.get("experience") or [])[:2]:
+        for pos in (exp.get("positions") or [])[:1]:
+            if pos.get("title"):
+                candidates.append(pos["title"].strip())
+
+    for raw in candidates:
+        core = _core_title(raw)
+        for kw in [core] if core == raw else [core, raw]:
+            if kw and kw.lower() not in seen:
+                seen.add(kw.lower())
+                keywords.append(kw)
+
+    return keywords[:4]
+
+
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
@@ -167,17 +214,7 @@ async def step2_post(request: Request) -> HTMLResponse:
 async def step3_get(request: Request) -> HTMLResponse:
     sp = request.app.state.search_params_store.load()
     profile = request.app.state.profile_store.load()
-    # Pre-fill keywords from most recent role title
-    default_keywords = []
-    if profile:
-        exp = profile.get("experience") or []
-        if exp:
-            positions = exp[0].get("positions") or []
-            title = exp[0].get("title") or (
-                positions[0].get("title") if positions else ""
-            )
-            if title:
-                default_keywords = [title]
+    default_keywords = _default_keywords_from_profile(profile) if profile else []
 
     return request.app.state.templates.TemplateResponse(
         request,

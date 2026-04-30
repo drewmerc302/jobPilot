@@ -184,6 +184,7 @@
           <input type="text" id="keywords" name="keywords"
                  value="{{ (sp.keywords | join(', ')) if sp else (default_keywords | join(', ')) }}"
                  placeholder="e.g. Software Engineer, Backend Developer">
+          <p class="muted" style="font-size:12px;margin:4px 0 0">Each keyword is matched independently against job titles (OR logic, case-insensitive substring). Short phrases cast the widest net: "Engineering Manager" matches "Senior Engineering Manager", "Lead Engineering Manager", etc.</p>
         </div>
         <div class="form-row">
           <label for="seniority">Seniority filter</label>
