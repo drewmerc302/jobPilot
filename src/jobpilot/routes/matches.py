@@ -94,6 +94,34 @@ async def update_description(
     return RedirectResponse(f"/matches/{job_id}", status_code=303)
 
 
+@router.post("/matches/{job_id}/description-and-analyze")
+async def update_description_and_analyze(
+    job_id: str,
+    request: Request,
+    description: str = Form(...),
+):
+    db = request.app.state.db
+    config = request.app.state.config
+    client = request.app.state.client
+
+    db.update_job_description(job_id, description.strip())
+    job = db.get_job(job_id)
+
+    if job and compute_ladder(config, db)["state"] != "gift_exhausted":
+        profile = request.app.state.profile_store.load()
+        if profile:
+            try:
+                await asyncio.to_thread(
+                    ensure_analysis, job, profile, db, config, client=client, force=True
+                )
+            except Exception as exc:
+                logger.error(
+                    f"Analysis failed for {job_id} after description update: {exc}"
+                )
+
+    return RedirectResponse(f"/matches/{job_id}", status_code=303)
+
+
 @router.post("/matches/{job_id}/status", response_class=HTMLResponse)
 async def update_status(
     job_id: str,

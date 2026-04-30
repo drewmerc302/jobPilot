@@ -97,7 +97,7 @@
         {# Row 2: action buttons #}
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
 
-          {# Analyze or Re-analyze — form POST so page reloads with fresh state #}
+          {# Analyze or Re-analyze #}
           {% if can_act %}
             {% if has_analysis %}
             <form method="post" action="/matches/{{ job.id }}/analyze?force=1&redirect=1"
@@ -114,18 +114,23 @@
             {% endif %}
           {% endif %}
 
-          {# Generate Tailored Resume — opens modal #}
-          {% if has_analysis %}
-            {% if can_act %}
+          {# Generate Tailored Resume — opens tailor modal (analysis exists) or description modal (not yet analyzed) #}
+          {% if can_act %}
+            {% if has_analysis %}
             <button type="button" class="btn btn-primary btn-sm" style="width:100%"
                     onclick="document.getElementById('tailor-modal').showModal()">
               Generate Tailored Resume
             </button>
             {% else %}
-            <button type="button" class="btn btn-primary btn-sm" style="width:100%" disabled style="opacity:.45;cursor:not-allowed">
+            <button type="button" class="btn btn-primary btn-sm" style="width:100%"
+                    onclick="document.getElementById('description-modal').showModal()">
               Generate Tailored Resume
             </button>
             {% endif %}
+          {% else %}
+          <button type="button" class="btn btn-primary btn-sm" style="width:100%" disabled style="opacity:.45;cursor:not-allowed">
+            Generate Tailored Resume
+          </button>
           {% endif %}
 
           {# Interview Q&A Guide #}
@@ -143,9 +148,6 @@
           </button>
           {% endif %}
 
-          <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="width:100%;text-align:center">
-            Full Job Listing (O) ↗
-          </a>
         </div>
       </div>
 
@@ -156,28 +158,6 @@
         </div>
         <div class="detail-description" style="margin-top:12px">{{ (job.description or '') | clean_html or 'No description available.' }}</div>
       </div>
-
-      <details style="margin-top:8px">
-        <summary style="font-size:12px;color:var(--muted);cursor:pointer;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px">
-          <span style="font-size:10px">▸</span> Paste full description for better analysis
-        </summary>
-        <div class="card" style="margin-top:6px;padding:14px 16px">
-          <p class="muted" style="font-size:12px;margin:0 0 10px">
-            Copy the full job description from the
-            <a href="{{ job.url }}" target="_blank" rel="noopener">listing page ↗</a>
-            and paste it here, then re-analyze.
-          </p>
-          <form method="post" action="/matches/{{ job.id }}/description"
-                onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.textContent='Saving…'">
-            <textarea name="description" rows="10"
-                      style="width:100%;font-size:12px;resize:vertical;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit">{{ (job.description or '') | clean_html }}</textarea>
-            <button type="submit" class="btn btn-outline btn-sm" style="margin-top:8px;width:100%">
-              Save description
-            </button>
-            <p class="muted" style="font-size:11px;margin:6px 0 0">After saving, click Re-analyze above.</p>
-          </form>
-        </div>
-      </details>
     </div>
   </div>
 
@@ -185,6 +165,39 @@
     {% include "_partials/interview_prep_result.html" %}
   </div>
 </div>
+
+{# ── Description Modal — paste full JD + auto-analyze ── #}
+{% if can_act %}
+<dialog id="description-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;max-width:560px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15)">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+    <h3 style="margin:0;font-size:16px;font-weight:700">Get Resume Suggestions</h3>
+    <button onclick="document.getElementById('description-modal').close()"
+            style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">×</button>
+  </div>
+  <div style="padding:20px">
+    <p style="margin:0 0 12px;font-size:14px">
+      We only have a short snippet for this role. For accurate resume suggestions, copy the full job description from the listing page and paste it below.
+    </p>
+    <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:inline-flex;margin-bottom:16px">
+      Open Full Listing ↗
+    </a>
+    <form method="post" action="/matches/{{ job.id }}/description-and-analyze"
+          onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.textContent='Saving &amp; analyzing…'">
+      <textarea name="description" rows="12"
+                style="width:100%;font-size:12px;resize:vertical;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;margin-bottom:10px">{{ (job.description or '') | clean_html }}</textarea>
+      <button type="submit" class="btn btn-primary btn-sm" style="width:100%">
+        Save &amp; Generate Suggestions (~$0.03)
+      </button>
+    </form>
+  </div>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById("description-modal");
+  if (dlg) dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+})();
+</script>
+{% endif %}
 
 {# ── Tailored Resume Modal ── #}
 {% if has_analysis and can_act %}
@@ -197,26 +210,49 @@
   <form hx-post="/matches/{{ job.id }}/tailor"
         hx-target="#detail-tailor-slot"
         hx-swap="innerHTML"
-        hx-on::after-request="document.getElementById('tailor-modal').close()"
+        hx-on::after-settle="document.getElementById('tailor-modal').close(); var s=document.getElementById('detail-tailor-slot'); var a=s&&s.querySelector('a[href]'); if(a) window.open(a.href,'_blank','noopener');"
         style="padding:20px;max-height:65vh;overflow-y:auto">
     {% if suggestions.suggested_edits %}
-    <p class="muted" style="font-size:12px;margin:0 0 14px">
+    <p class="muted" style="font-size:12px;margin:0 0 10px">
       Check the edits to include. Bullets are always reordered by relevance.
     </p>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button type="button" class="btn btn-outline btn-sm"
+              onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=true})">
+        Select all
+      </button>
+      <button type="button" class="btn btn-outline btn-sm"
+              onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=false})">
+        Deselect all
+      </button>
+    </div>
     {% for edit in suggestions.suggested_edits %}
-    <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;font-size:13px;cursor:pointer">
-      <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:3px;flex-shrink:0" checked>
-      <div>
-        <div style="color:var(--muted);text-decoration:line-through">{{ edit.original }}</div>
-        <div style="color:var(--green)">{{ edit.suggested }}</div>
-        {% if edit.reason %}<div class="muted" style="font-size:11px">{{ edit.reason }}</div>{% endif %}
-      </div>
-    </label>
+    <div style="margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+      <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+        <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:4px;flex-shrink:0" checked>
+        <div style="flex:1;font-size:13px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Current</div>
+          <div style="color:var(--muted);text-decoration:line-through;margin-bottom:8px">{{ edit.original }}</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:2px">Suggested</div>
+          <div style="color:var(--green){% if edit.reason %};margin-bottom:8px{% endif %}">{{ edit.suggested }}</div>
+          {% if edit.reason %}
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Rationale</div>
+          <div class="muted" style="font-size:11px">{{ edit.reason }}</div>
+          {% endif %}
+        </div>
+      </label>
+    </div>
     {% endfor %}
     {% else %}
-    <p class="muted" style="font-size:14px;margin:0 0 16px">
-      No specific edits suggested — your resume is a strong match.
+    <p class="muted" style="font-size:14px;margin:0 0 12px">
+      No specific edits suggested — your resume is already a strong match.
       Generating will reorder your bullets for maximum relevance.
+    </p>
+    <p style="margin:0 0 16px;font-size:12px">
+      <a href="#" style="color:var(--muted)"
+         onclick="document.getElementById('tailor-modal').close(); document.getElementById('description-modal').showModal(); return false;">
+        Not seeing relevant suggestions? Paste the full job description →
+      </a>
     </p>
     {% endif %}
     <div style="display:flex;gap:8px;padding-top:4px">
