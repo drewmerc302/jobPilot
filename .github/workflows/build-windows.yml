@@ -1,0 +1,45 @@
+name: Build Windows installer
+
+on:
+  workflow_dispatch:   # run manually from Actions tab
+  push:
+    tags:
+      - "v*"           # also runs on version tags (v0.1.0, etc.)
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Briefcase
+        run: pip install briefcase
+
+      - name: Create app bundle
+        run: briefcase create windows
+
+      - name: Build
+        run: briefcase build windows
+
+      - name: Package (unsigned MSI)
+        run: briefcase package windows
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: jobpilot-windows-installer
+          path: dist\*.msi
+          retention-days: 30
+
+      # Uncomment to publish MSI as a GitHub Release asset when a tag is pushed
+      # - name: Publish to GitHub Releases
+      #   if: startsWith(github.ref, 'refs/tags/')
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: dist\*.msi
+      #     draft: true
