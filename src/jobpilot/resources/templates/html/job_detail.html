@@ -120,13 +120,20 @@
             {% endif %}
           {% endif %}
 
-          {# Generate Tailored Resume — opens tailor modal (analysis exists) or description modal (not yet analyzed) #}
+          {# Generate Tailored Resume — primary if no resume yet; secondary re-generate if one exists #}
           {% if can_act %}
             {% if has_analysis %}
-            <button type="button" class="btn btn-primary btn-sm" style="width:100%"
-                    onclick="document.getElementById('tailor-modal').showModal()">
-              Generate Tailored Resume
-            </button>
+              {% if match and match.resume_path %}
+              <button type="button" class="btn btn-outline btn-sm" style="width:100%"
+                      onclick="document.getElementById('tailor-modal').showModal()">
+                ↻ Re-generate resume
+              </button>
+              {% else %}
+              <button type="button" class="btn btn-primary btn-sm" style="width:100%"
+                      onclick="document.getElementById('tailor-modal').showModal()">
+                Generate Tailored Resume
+              </button>
+              {% endif %}
             {% else %}
             <button type="button" class="btn btn-primary btn-sm" style="width:100%"
                     onclick="document.getElementById('description-modal').showModal()">
@@ -214,7 +221,7 @@
 <dialog id="tailor-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;max-width:min(1120px,96vw);width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15);display:flex;flex-direction:column;max-height:90vh">
   <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
     <h3 style="margin:0;font-size:16px;font-weight:700">Generate Tailored Resume</h3>
-    <button onclick="document.getElementById('tailor-modal').close()"
+    <button type="button" onclick="document.getElementById('tailor-modal').close()"
             style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">×</button>
   </div>
   <form hx-post="/matches/{{ job.id }}/tailor"
