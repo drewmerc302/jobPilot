@@ -36,7 +36,7 @@ class JooblesScraper(BaseScraper):
 
         # Remote pass
         if sp.remote_ok:
-            jobs.extend(self._fetch(keywords + " remote", ""))
+            jobs.extend(self._fetch(keywords + " remote", "", force_remote=True))
 
         seen: set[str] = set()
         deduped = []
@@ -46,7 +46,9 @@ class JooblesScraper(BaseScraper):
                 deduped.append(job)
         return deduped
 
-    def _fetch(self, keywords: str, location: str) -> list[RawJob]:
+    def _fetch(
+        self, keywords: str, location: str, force_remote: bool = False
+    ) -> list[RawJob]:
         url = _JOOBLE_URL.format(key=self._api_key)
         payload: dict = {"keywords": keywords}
         if location:
@@ -74,7 +76,11 @@ class JooblesScraper(BaseScraper):
                 company = (item.get("company") or "Unknown").strip()
                 salary = (item.get("salary") or "").strip() or None
                 snippet = (item.get("snippet") or "").strip() or None
-                is_remote = bool(location_str and "remote" in location_str.lower())
+                is_remote = (
+                    force_remote
+                    or bool(location_str and "remote" in location_str.lower())
+                    or "remote" in title.lower()
+                )
 
                 results.append(
                     RawJob(

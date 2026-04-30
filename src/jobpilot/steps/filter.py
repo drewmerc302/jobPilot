@@ -1,11 +1,13 @@
 import json
 import logging
+import time
 
 import anthropic
 
 import jobpilot.llm as llm
 from jobpilot.config import Config
 from jobpilot.db import Database
+from jobpilot.geocode import geocode_point, haversine_miles
 from jobpilot.llm import llm_retry
 from jobpilot.search_params import SearchParams
 
@@ -46,6 +48,57 @@ EVAL_TOOL = {
         ],
     },
 }
+
+
+def location_filter(jobs: list[dict], search_params: SearchParams) -> list[dict]:
+    """Drop jobs that are neither remote nor within the search radius.
+
+    Fails open: jobs with unparseable/missing locations pass through.
+    Nominatim allows ~1 req/sec; sleeps between unique-location lookups.
+    """
+    if search_params.latitude is None or search_params.longitude is None:
+        return jobs
+
+    passed: list[dict] = []
+    geocache: dict[str, tuple[float, float] | None] = {}
+    first_call = True
+
+    for job in jobs:
+        loc = (job.get("location") or "").strip()
+        is_remote = bool(job.get("is_remote"))
+
+        if is_remote or "remote" in loc.lower():
+            passed.append(job)
+            continue
+
+        if not loc:
+            passed.append(job)
+            continue
+
+        if loc not in geocache:
+            if not first_call:
+                time.sleep(1.1)
+            geocache[loc] = geocode_point(loc)
+            first_call = False
+
+        coords = geocache[loc]
+        if coords is None:
+            passed.append(job)
+            continue
+
+        dist = haversine_miles(
+            search_params.latitude, search_params.longitude, coords[0], coords[1]
+        )
+        if dist <= search_params.radius_miles:
+            passed.append(job)
+        else:
+            logger.info(
+                f"Location filter: dropped {job['title']} @ {job.get('company')} "
+                f"({loc}, {dist:.0f} mi away)"
+            )
+
+    logger.info(f"Location filter: {len(jobs)} → {len(passed)}")
+    return passed
 
 
 def _matches_keywords(title: str, keywords: list[str]) -> bool:
@@ -131,6 +184,7 @@ def run_filter(
     jobs = [db.get_job(job_id) for job_id in new_job_ids]
     jobs = [j for j in jobs if j]
     candidates = keyword_filter(jobs, search_params)
+    candidates = location_filter(candidates, search_params)
     if not candidates:
         logger.info("No jobs passed keyword filter")
         return []

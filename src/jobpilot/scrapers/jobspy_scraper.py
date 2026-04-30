@@ -64,7 +64,7 @@ class JobSpyScraper(BaseScraper):
                     hours_old=72,
                     verbose=0,
                 )
-                results.extend(self._df_to_raw(df))
+                results.extend(self._df_to_raw(df, force_remote=True))
             except Exception as exc:
                 logger.warning(f"JobSpy remote search failed: {exc}")
 
@@ -76,7 +76,7 @@ class JobSpyScraper(BaseScraper):
                 deduped.append(job)
         return deduped
 
-    def _df_to_raw(self, df) -> list[RawJob]:
+    def _df_to_raw(self, df, force_remote: bool = False) -> list[RawJob]:
         jobs = []
         now = datetime.now(timezone.utc)
         for _, row in df.iterrows():
@@ -89,7 +89,11 @@ class JobSpyScraper(BaseScraper):
                     continue
 
                 location = _val(row.get("location"))
-                is_remote = bool(_val(row.get("is_remote"), False))
+                is_remote = force_remote or bool(_val(row.get("is_remote"), False))
+                if not is_remote:
+                    loc_str = (location or "").lower()
+                    if "remote" in loc_str or "remote" in title.lower():
+                        is_remote = True
 
                 min_amt = _val(row.get("min_amount"))
                 max_amt = _val(row.get("max_amount"))
