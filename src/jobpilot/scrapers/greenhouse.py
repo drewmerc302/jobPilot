@@ -1,3 +1,4 @@
+import html as html_mod
 import logging
 import re
 from datetime import datetime, timezone
@@ -87,7 +88,9 @@ class GreenhouseScraper(BaseScraper):
                     location=(item.get("location") or {}).get("name"),
                     remote=self._is_remote(item),
                     salary=self._extract_salary(item.get("content") or ""),
-                    description=html_to_text(item["content"]) if item.get("content") else None,
+                    description=html_to_text(html_mod.unescape(item["content"]))
+                    if item.get("content")
+                    else None,
                     department=((item.get("departments") or [{}])[0].get("name")),
                     seniority=None,
                     scraped_at=now,
