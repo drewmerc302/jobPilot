@@ -415,7 +415,8 @@ class Database:
 
     def get_all_applications(self) -> list[dict]:
         rows = self._conn.execute("""
-            SELECT m.job_id, j.company, j.title, j.url, j.location, m.relevance_score,
+            SELECT m.job_id, j.company, j.title, j.url, j.location, j.source,
+                   m.relevance_score,
                    COALESCE(a.status, 'new') as status,
                    a.applied_date, a.status_updated_at, a.notes,
                    m.matched_at, m.resume_path, m.match_reason

@@ -170,13 +170,13 @@
 {% if can_act %}
 <dialog id="description-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;max-width:560px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15)">
   <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-    <h3 style="margin:0;font-size:16px;font-weight:700">Get Resume Suggestions</h3>
+    <h3 style="margin:0;font-size:16px;font-weight:700">Paste the full job description</h3>
     <button onclick="document.getElementById('description-modal').close()"
             style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">×</button>
   </div>
   <div style="padding:20px">
     <p style="margin:0 0 12px;font-size:14px">
-      We only have a short snippet for this role. For accurate resume suggestions, copy the full job description from the listing page and paste it below.
+      We only have a short snippet for this role. Paste the full description below so we can tailor your resume accurately.
     </p>
     <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:inline-flex;margin-bottom:16px">
       Open Full Listing ↗
@@ -186,7 +186,7 @@
       <textarea name="description" rows="12"
                 style="width:100%;font-size:12px;resize:vertical;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;margin-bottom:10px">{{ (job.description or '') | clean_html }}</textarea>
       <button type="submit" class="btn btn-primary btn-sm" style="width:100%">
-        Save &amp; Generate Suggestions (~$0.03)
+        Save &amp; analyze (~$0.03)
       </button>
     </form>
   </div>

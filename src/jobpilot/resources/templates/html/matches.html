@@ -13,16 +13,20 @@
   {% endif %}
 
   {% if spent and budget and spent >= budget * 0.8 %}
+  {% if spent >= budget %}
   <div class="alert alert-error" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-    <span>
-      {% if spent >= budget %}
-        Monthly budget reached (${{ "%.2f"|format(spent) }} / ${{ "%.2f"|format(budget) }}). Consider raising your limit in Settings.
-      {% else %}
-        Monthly budget {{ ((spent / budget) * 100)|int }}% used (${{ "%.2f"|format(spent) }} / ${{ "%.2f"|format(budget) }}).
-      {% endif %}
-    </span>
-    <a href="/settings" class="btn btn-danger btn-sm" style="margin-left:16px;white-space:nowrap">Update limit →</a>
+    <span>Monthly budget reached (${{ "%.2f"|format(spent) }} / ${{ "%.2f"|format(budget) }}).</span>
+    <div style="display:flex;gap:8px;margin-left:16px;flex-shrink:0">
+      <a href="/settings" class="btn btn-danger btn-sm" style="white-space:nowrap">Raise limit →</a>
+      <a href="/settings" class="btn btn-danger btn-sm" style="white-space:nowrap">Add own key →</a>
+    </div>
   </div>
+  {% else %}
+  <div class="alert alert-warning" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <span>Monthly budget {{ ((spent / budget) * 100)|int }}% used (${{ "%.2f"|format(spent) }} / ${{ "%.2f"|format(budget) }}).</span>
+    <a href="/settings" class="btn btn-sm" style="margin-left:16px;white-space:nowrap;background:var(--border);color:inherit">Update limit →</a>
+  </div>
+  {% endif %}
   {% endif %}
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:{% if sp %}12px{% else %}20px{% endif %}">

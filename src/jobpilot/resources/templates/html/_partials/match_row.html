@@ -7,10 +7,14 @@
   </td>
   <td class="muted" style="font-size:13px;white-space:nowrap">{{ m.location or '—' }}</td>
   <td>
+    {% if m.source == 'manual' %}
+    <span class="match-score" style="color:var(--muted);font-weight:400">—</span>
+    {% else %}
     <span class="match-score">{{ "%.0f"|format(m.relevance_score * 100) }}%</span>
+    {% endif %}
   </td>
   <td>
-    <span class="match-reason">{{ m.match_reason or '' }}</span>
+    <span class="match-reason">{% if m.source == 'manual' and not m.match_reason %}Not yet analyzed{% else %}{{ m.match_reason or '' }}{% endif %}</span>
   </td>
   <td>
     {% with job_id=m.job_id, status=m.status %}
@@ -22,13 +26,13 @@
       {% if m.resume_path %}
       <a href="{{ m.resume_path }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">PDF ↗</a>
       {% endif %}
-      <a href="/matches/{{ m.job_id }}" class="btn btn-outline btn-sm details-btn">Job Details (D)</a>
+      <a href="/matches/{{ m.job_id }}" class="btn btn-outline btn-sm details-btn" title="Open job details (D)">Details</a>
       <button class="btn btn-outline btn-sm dismiss-btn"
               hx-post="/matches/{{ m.job_id }}/dismiss"
               hx-target="closest tr"
               hx-swap="outerHTML"
-              title="Dismiss this match">
-        Dismiss (X)
+              title="Dismiss this match (X)">
+        Dismiss
       </button>
     </div>
   </td>
