@@ -5,8 +5,10 @@ All app state is set up in the lifespan context and attached to app.state.
 """
 
 import asyncio
+import html as _html_mod
 import logging
 import os
+import re
 import threading
 import time
 import webbrowser
@@ -59,6 +61,16 @@ async def lifespan(app: FastAPI):
     app.state.profile_store = ProfileStore(config.data_dir)
     app.state.search_params_store = SearchParamsStore(config.data_dir)
     app.state.templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+    def _clean_html(text: str | None) -> str:
+        if not text:
+            return ""
+        stripped = re.sub(r"<[^>]+>", " ", text)
+        decoded = _html_mod.unescape(stripped)
+        return re.sub(r" {2,}", " ", decoded).strip()
+
+    app.state.templates.env.filters["clean_html"] = _clean_html
+
     app.state.run_status = {}  # run_id -> {"stage": str, "result": dict|None, "error": str|None}
     app.state.background_tasks = set()
 

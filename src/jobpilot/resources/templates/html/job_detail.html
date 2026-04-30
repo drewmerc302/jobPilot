@@ -60,7 +60,7 @@
 
       <div class="card">
         <h3 style="margin:0 0 12px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Description</h3>
-        <div class="detail-description">{{ job.description or 'No description available.' }}</div>
+        <div class="detail-description">{{ (job.description or '') | clean_html or 'No description available.' }}</div>
       </div>
     </div>
 
