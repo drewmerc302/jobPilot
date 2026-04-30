@@ -172,7 +172,7 @@
       </div>
       <div class="form-row">
         <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer">
-          <input type="checkbox" name="remote_ok" {% if not sp or sp.remote_ok %}checked{% endif %}>
+          <input type="checkbox" name="remote_ok" {% if sp and sp.remote_ok %}checked{% endif %}>
           Include remote jobs
         </label>
       </div>

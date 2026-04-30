@@ -19,6 +19,6 @@ class SearchParams:
     latitude: float | None = None
     longitude: float | None = None
     radius_miles: int = 25
-    remote_ok: bool = True
+    remote_ok: bool = False
     seniority: str | None = None
     anchor_companies: list[str] = field(default_factory=list)
