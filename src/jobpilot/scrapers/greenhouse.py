@@ -10,6 +10,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from jobpilot.fetch_description import html_to_text
 from jobpilot.scrapers.base import BaseScraper, RawJob
 
 logger = logging.getLogger(__name__)
@@ -86,7 +87,7 @@ class GreenhouseScraper(BaseScraper):
                     location=(item.get("location") or {}).get("name"),
                     remote=self._is_remote(item),
                     salary=self._extract_salary(item.get("content") or ""),
-                    description=item.get("content"),
+                    description=html_to_text(item["content"]) if item.get("content") else None,
                     department=((item.get("departments") or [{}])[0].get("name")),
                     seniority=None,
                     scraped_at=now,

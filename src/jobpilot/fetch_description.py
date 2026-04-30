@@ -53,6 +53,16 @@ class _TextExtractor(HTMLParser):
         return re.sub(r"\n{3,}", "\n\n", re.sub(r"[ \t]{2,}", " ", raw)).strip()
 
 
+def html_to_text(html: str) -> str:
+    """Strip HTML tags and return clean plain text, preserving paragraph breaks."""
+    extractor = _TextExtractor()
+    try:
+        extractor.feed(html)
+    except Exception:
+        return re.sub(r"<[^>]+>", " ", html).strip()
+    return extractor.get_text()
+
+
 def is_snippet(description: str | None, source: str | None = None) -> bool:
     """Return True if the stored description looks like a truncated HTML snippet.
 

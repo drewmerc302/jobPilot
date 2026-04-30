@@ -257,6 +257,14 @@
         </label>
       </div>
       {% endfor %}
+      {% elif not has_analysis %}
+      <div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:var(--radius);padding:16px;margin-bottom:16px">
+        <p style="margin:0 0 6px;font-size:14px;font-weight:600">Ready to tailor</p>
+        <p class="muted" style="margin:0 0 6px;font-size:13px">
+          Full description is available. Click Generate PDF to analyze this role and create your tailored resume in one step.
+        </p>
+        <p class="muted" style="font-size:11px;margin:0">~$0.03 via Claude</p>
+      </div>
       {% else %}
       <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
         <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edit suggestions found</p>
