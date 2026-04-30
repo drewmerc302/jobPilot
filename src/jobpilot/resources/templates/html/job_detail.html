@@ -8,8 +8,11 @@
   suggestions.get('interview_talking_points') or
   suggestions.get('suggested_edits') is not none
 ) %}
+{# has_tailor_analysis is True only when suggested_edits has been explicitly set
+   (even if empty — empty list = genuine strong match; None = never tailored) #}
+{% set has_tailor_analysis = suggestions and suggestions.get('suggested_edits') is not none %}
 {% set can_act = not (ladder and ladder.state == "gift_exhausted") %}
-{% set needs_analysis = can_act and has_full_description and not has_analysis %}
+{% set needs_analysis = can_act and has_full_description and not has_tailor_analysis %}
 
 <div class="page">
   <div style="margin-bottom:16px">
@@ -127,7 +130,7 @@
               </button>
               {% else %}
               <button type="button" class="btn btn-primary btn-sm" style="width:100%"
-                      onclick="document.getElementById('tailor-modal').showModal()">
+                      onclick="document.getElementById('tailor-modal').showModal(){% if needs_analysis %}; htmx.ajax('POST', '/matches/{{ job.id }}/tailor-analyze', {target: '#tailor-modal-content', swap: 'innerHTML'}){% endif %}">
                 Generate Tailored Resume
               </button>
               {% endif %}
@@ -228,24 +231,13 @@
         style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div id="tailor-modal-content" style="display:flex;flex-direction:column;flex:1;min-height:0">
       {% if needs_analysis %}
-      {# State: full description available but not yet analyzed (or stale analysis) #}
-      <div style="padding:20px;overflow-y:auto;flex:1">
-        <div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:var(--radius);padding:16px">
-          <p style="margin:0 0 6px;font-size:14px;font-weight:600">Analyze this role first</p>
-          <p class="muted" style="margin:0 0 8px;font-size:13px">
-            jobPilot will compare the job description against your resume, suggest specific edits, and identify keyword gaps. You'll review the suggestions before generating your PDF.
-          </p>
-          <p class="muted" style="margin:0;font-size:11px">~$0.03 via Claude · takes 20–40 seconds</p>
-        </div>
+      {# Analysis auto-fires via htmx.ajax() in the button onclick — show loading state #}
+      <div style="padding:40px 20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+        <div style="width:24px;height:24px;border:3px solid #ccc;border-top-color:#555;border-radius:50%;animation:spin .7s linear infinite"></div>
+        <p style="margin:0;color:var(--muted);font-size:14px">Analyzing resume against this role…</p>
+        <p style="margin:0;color:var(--muted);font-size:12px">~$0.03 via Claude · 20–40 seconds</p>
       </div>
-      <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button type="button" class="btn btn-primary btn-sm"
-                hx-post="/matches/{{ job.id }}/tailor-analyze"
-                hx-target="#tailor-modal-content"
-                hx-swap="innerHTML"
-                onclick="this.disabled=true;this.querySelector('.spin-icon').style.display='inline-block';this.querySelector('.btn-label').textContent='Analyzing… (20–40 sec)'">
-          <span class="spin-icon" style="display:none;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px"></span><span class="btn-label">Analyze this role</span>
-        </button>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center">
         <button type="button" class="btn btn-outline btn-sm"
                 onclick="document.getElementById('tailor-modal').close()">
           Cancel
