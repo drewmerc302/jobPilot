@@ -159,6 +159,51 @@ class Database:
         )
         self._conn.commit()
 
+    def add_manual_job(
+        self,
+        job_id: str,
+        url: str,
+        title: str,
+        company: str,
+        location: str | None = None,
+        salary: str | None = None,
+        remote: bool = False,
+        description: str | None = None,
+    ) -> bool:
+        """Insert a manually-added job and a synthetic match row. Returns True if new, False if already existed."""
+        now = datetime.now(timezone.utc).isoformat()
+        cur = self._conn.execute(
+            """
+            INSERT INTO jobs (id, company, title, url, location, remote, salary,
+                              description, source, first_seen_at, last_seen_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?)
+            ON CONFLICT(id) DO NOTHING
+            """,
+            (
+                job_id,
+                company,
+                title,
+                url,
+                location,
+                remote,
+                salary,
+                description,
+                now,
+                now,
+            ),
+        )
+        is_new = cur.rowcount > 0
+        self._conn.execute(
+            """
+            INSERT INTO matches (job_id, relevance_score, match_reason, matched_at)
+            VALUES (?, 0, 'Manually added', ?)
+            ON CONFLICT(job_id) DO NOTHING
+            """,
+            (job_id, now),
+        )
+        self._conn.commit()
+        return is_new
+
     def get_job(self, job_id: str) -> dict | None:
         row = self._conn.execute(
             "SELECT * FROM jobs WHERE id = ?", (job_id,)

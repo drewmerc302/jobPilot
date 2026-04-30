@@ -36,6 +36,8 @@
       {% else %}
       <a href="/wizard/step/4" class="btn btn-outline btn-sm">↻ Refresh</a>
       {% endif %}
+      <button type="button" class="btn btn-outline btn-sm"
+              onclick="document.getElementById('add-job-modal').showModal()">+ Add job</button>
     </div>
   </div>
 
@@ -161,4 +163,57 @@
   })();
 </script>
 {% endif %}
+
+{# ── Add Job Modal ── #}
+<dialog id="add-job-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;max-width:540px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15)">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+    <h3 style="margin:0;font-size:16px;font-weight:700">Add a job</h3>
+    <button onclick="document.getElementById('add-job-modal').close()"
+            style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">×</button>
+  </div>
+  <form method="post" action="/matches/add-job" style="padding:20px;display:flex;flex-direction:column;gap:14px"
+        onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.textContent='Saving…'">
+    <div>
+      <label for="aj-url">Job URL <span style="color:var(--red)">*</span></label>
+      <input id="aj-url" type="url" name="url" required placeholder="https://…" style="margin-top:4px">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <label for="aj-title">Job title <span style="color:var(--red)">*</span></label>
+        <input id="aj-title" type="text" name="title" required placeholder="Software Engineer" style="margin-top:4px">
+      </div>
+      <div>
+        <label for="aj-company">Company <span style="color:var(--red)">*</span></label>
+        <input id="aj-company" type="text" name="company" required placeholder="Acme Corp" style="margin-top:4px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <label for="aj-location">Location</label>
+        <input id="aj-location" type="text" name="location" placeholder="San Francisco, CA" style="margin-top:4px">
+      </div>
+      <div>
+        <label for="aj-salary">Salary</label>
+        <input id="aj-salary" type="text" name="salary" placeholder="$120k–$160k" style="margin-top:4px">
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer">
+      <input type="checkbox" name="remote"> Remote-friendly
+    </label>
+    <div>
+      <label for="aj-desc">Job description <span class="muted" style="font-weight:400">(paste for better suggestions)</span></label>
+      <textarea id="aj-desc" name="description" rows="6"
+                style="margin-top:4px;font-size:12px;resize:vertical"
+                placeholder="Paste the full job description here…"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm" style="align-self:flex-end">Save job</button>
+  </form>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById("add-job-modal");
+  if (dlg) dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+})();
+</script>
+
 {% endblock %}

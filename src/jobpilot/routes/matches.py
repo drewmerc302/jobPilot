@@ -1,9 +1,13 @@
 """Matches list, job detail, status management, tailoring, and interview prep."""
 
 import asyncio
+import hashlib
+import ipaddress
 import json
 import logging
+import re
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
@@ -15,6 +19,49 @@ from jobpilot.steps.tailor import ensure_analysis, run_tailor_for_job
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+_STRIP_PARAMS = re.compile(
+    r"^(utm_|fbclid|gclid|refId|ref_|mc_|ck_|trk|campaignid|adgroupid)", re.IGNORECASE
+)
+
+
+def _is_safe_url(url: str) -> bool:
+    try:
+        p = urlparse(url)
+        if p.scheme not in ("http", "https"):
+            return False
+        host = p.hostname
+        if not host:
+            return False
+        try:
+            addr = ipaddress.ip_address(host)
+            if (
+                addr.is_private
+                or addr.is_loopback
+                or addr.is_link_local
+                or addr.is_reserved
+            ):
+                return False
+        except ValueError:
+            if (
+                host in ("localhost",)
+                or host.endswith(".local")
+                or host.endswith(".internal")
+            ):
+                return False
+        return True
+    except Exception:
+        return False
+
+
+def _canonical_url(url: str) -> str:
+    p = urlparse(url)
+    qs = [(k, v) for k, v in parse_qsl(p.query) if not _STRIP_PARAMS.match(k)]
+    return urlunparse(p._replace(query=urlencode(qs), fragment=""))
+
+
+def _manual_job_id(url: str) -> str:
+    return "manual:" + hashlib.sha256(_canonical_url(url).encode()).hexdigest()[:12]
 
 
 @router.get("/matches", response_class=HTMLResponse)
@@ -309,6 +356,37 @@ async def interview_prep_match(job_id: str, request: Request) -> HTMLResponse:
     except Exception as exc:
         logger.error(f"Interview prep failed for {job_id}: {exc}")
         return HTMLResponse(f"<span class='error'>Interview prep failed: {exc}</span>")
+
+
+@router.post("/matches/add-job")
+async def add_job(
+    request: Request,
+    url: str = Form(...),
+    title: str = Form(...),
+    company: str = Form(...),
+    location: str = Form(""),
+    salary: str = Form(""),
+    remote: str = Form(""),
+    description: str = Form(""),
+):
+    url = url.strip()
+    if not _is_safe_url(url):
+        return HTMLResponse(
+            "<span class='error'>Invalid URL — must be http/https and not a private address.</span>",
+            status_code=400,
+        )
+    job_id = _manual_job_id(url)
+    request.app.state.db.add_manual_job(
+        job_id=job_id,
+        url=url,
+        title=title.strip(),
+        company=company.strip(),
+        location=location.strip() or None,
+        salary=salary.strip() or None,
+        remote=remote == "on",
+        description=description.strip() or None,
+    )
+    return RedirectResponse(f"/matches/{job_id}", status_code=303)
 
 
 @router.get("/output/{path:path}")
