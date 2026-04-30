@@ -19,6 +19,18 @@
 
   <form id="profile-form" method="post" action="/profile/save">
 
+    {# ── Add new experience ── #}
+    <div class="card" style="padding:20px;margin-bottom:16px;border-style:dashed">
+      <h3 style="margin:0 0 4px;font-size:15px" data-tooltip="Describe a role in plain language — company, title, dates, what you did. Claude structures it on save.">Add new experience</h3>
+      <p class="muted" style="font-size:13px;margin:0 0 10px">
+        Describe a role in plain language — Claude will structure it into the right format when you save.
+      </p>
+      <textarea name="new_experience" rows="4"
+                style="font-size:13px;resize:vertical"
+                placeholder="e.g. I worked at Acme Corp as VP of Engineering from 2024 to present. Led a platform rebuild that cut costs 40% and grew the team from 10 to 30 engineers across 3 locations…"></textarea>
+      <p class="muted" style="font-size:11px;margin:4px 0 0">~$0.01 via Claude · parsed automatically on save</p>
+    </div>
+
     {# ── Contact ── #}
     <div class="card" style="padding:20px;margin-bottom:16px">
       <h3 style="margin:0 0 14px;font-size:15px">Contact</h3>
@@ -178,18 +190,6 @@
       {% endfor %}
     </div>
     {% endif %}
-
-    {# ── Add new experience ── #}
-    <div class="card" style="padding:20px;margin-bottom:16px;border-style:dashed">
-      <h3 style="margin:0 0 4px;font-size:15px" data-tooltip="Describe a role in plain language — company, title, dates, what you did. Claude structures it on save.">Add new experience</h3>
-      <p class="muted" style="font-size:13px;margin:0 0 10px">
-        Describe a role in plain language — Claude will structure it into the right format when you save.
-      </p>
-      <textarea name="new_experience" rows="4"
-                style="font-size:13px;resize:vertical"
-                placeholder="e.g. I worked at Acme Corp as VP of Engineering from 2024 to present. Led a platform rebuild that cut costs 40% and grew the team from 10 to 30 engineers across 3 locations…"></textarea>
-      <p class="muted" style="font-size:11px;margin:4px 0 0">~$0.01 via Claude · parsed automatically on save</p>
-    </div>
 
     {# ── Bottom save ── #}
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">
