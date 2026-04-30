@@ -34,7 +34,7 @@
       <h1 style="margin:0;font-size:22px">Your matches</h1>
       <p class="muted" style="margin:4px 0 0">{{ matches|length }} jobs · press <kbd>?</kbd> for shortcuts</p>
     </div>
-    <div style="display:flex;gap:10px">
+    <div>
       {% if ladder and ladder.state == "gift_exhausted" %}
       <span class="btn btn-outline btn-sm" style="opacity:.45;cursor:not-allowed" title="Add your own key to refresh">↻ Refresh</span>
       {% else %}
@@ -42,8 +42,6 @@
         <button type="submit" class="btn btn-outline btn-sm">↻ Refresh</button>
       </form>
       {% endif %}
-      <button type="button" class="btn btn-outline btn-sm"
-              onclick="document.getElementById('add-job-modal').showModal()">+ Add job</button>
     </div>
   </div>
 
@@ -62,6 +60,11 @@
     </button>
   </div>
   {% endif %}
+
+  <div style="margin-bottom:12px">
+    <button type="button" class="btn btn-primary btn-sm"
+            onclick="document.getElementById('add-job-modal').showModal()">+ Add your own job listing</button>
+  </div>
 
   {% if not matches %}
   <div class="card" style="text-align:center;padding:48px">
