@@ -1,11 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // jobPilot User Guide
 // Build: typst compile user_guide.typ user_guide.pdf
-//
-// ADDING SCREENSHOTS
-// Replace each placeholder() call with:
-//   image("screenshots/XX-name.png", width: 100%)
-// The filename for each section is shown inside the gray box.
 // ─────────────────────────────────────────────────────────────────────────────
 
 #let brand   = rgb("#0d6efd")
@@ -17,16 +12,16 @@
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-#let placeholder(filename) = rect(
-  width: 100%, height: 200pt,
-  stroke: 1.5pt + border, fill: surface, radius: 4pt,
-  align(center + horizon,
-    stack(dir: ttb, spacing: 8pt,
-      text(size: 22pt)["📸"],
-      text(fill: muted, size: 9pt, font: "Courier New")[#filename],
+#let shot(file, height: none) = {
+  if height != none {
+    box(width: 100%, height: height, clip: true,
+      image("screenshots/" + file, width: 100%)
     )
-  )
-)
+  } else {
+    image("screenshots/" + file, width: 100%)
+  }
+  rect(width: 100%, height: 0.5pt, fill: border)
+}
 
 #let callout(body) = rect(
   width: 100%, inset: 10pt,
@@ -55,7 +50,15 @@
   }
 }
 
-#let section-rule() = { v(4pt); line(length: 100%, stroke: 0.5pt + border); v(12pt) }
+#let label-row(items) = {
+  for (key, val) in items {
+    grid(columns: (110pt, 1fr), gutter: 8pt,
+      text(weight: "bold", size: 10pt)[#key],
+      text(size: 10pt)[#val],
+    )
+    v(5pt)
+  }
+}
 
 // ── Page setup ───────────────────────────────────────────────────────────────
 
@@ -142,9 +145,9 @@
 #toc-row("1", "What is jobPilot?", "Overview and what you'll need before you start")
 #toc-row("2", "First-Time Setup", "The five-step wizard: resume upload through your first search")
 #toc-row("3", "Browsing Your Matches", "Reading match scores, navigating the list, keyboard shortcuts")
-#toc-row("4", "Reviewing a Job", "Job detail page, generating a tailored resume, status tracking")
+#toc-row("4", "Reviewing a Job", "Job detail page, AI analysis, tailored resume, interview prep")
 #toc-row("5", "Managing Your Resume", "Editing profile data, AI summary rewrite, adding experience")
-#toc-row("6", "Settings", "API keys, search parameters, cost meter")
+#toc-row("6", "Settings", "API key, spending limit, and monthly budget")
 #toc-row("7", "Understanding Costs", "What each feature costs and how to monitor spend")
 #toc-row("8", "Tips & Troubleshooting", "Common questions and how to get unstuck")
 
@@ -156,9 +159,9 @@
 
 jobPilot is a local application that runs on your computer and helps you find, evaluate, and apply to jobs — without the noise of generic job boards.
 
-It connects to job listing APIs, scores each result against your actual resume using AI, and surfaces the roles most worth your time. When you find a promising match, one click generates a tailored resume analysis that tells you exactly how to position yourself for that specific role.
+It connects to job listing APIs, scores each result against your actual resume using AI, and surfaces the roles most worth your time. When you find a promising match, one click generates a tailored resume analysis telling you exactly how to position yourself — and produces an edited resume PDF ready to send.
 
-*Everything stays on your machine.* Your resume data never leaves your computer — the only outbound calls are to Anthropic (for AI features) and Adzuna (for job listings).
+*Everything stays on your machine.* Your resume data never leaves your computer. The only outbound calls are to Anthropic (for AI features) and Adzuna (for job listings).
 
 == What you'll need
 
@@ -185,7 +188,7 @@ It connects to job listing APIs, scores each result against your actual resume u
 )
 
 #v(10pt)
-#callout[*New to Anthropic?* Create a free account at console.anthropic.com, add a small amount of credit (\$5–10 is plenty to start), and copy your API key from the API Keys section. jobPilot will show you a running cost total so you always know what you've spent.]
+#callout[*New to Anthropic?* Create a free account at console.anthropic.com, add a small amount of credit (\$5–10 is plenty to start), and copy your API key from the API Keys section. The cost meter in the top-right corner of jobPilot always shows your running total.]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2 — FIRST-TIME SETUP
@@ -193,79 +196,65 @@ It connects to job listing APIs, scores each result against your actual resume u
 
 = 2. First-Time Setup
 
-The first time you open jobPilot, a five-step wizard walks you through everything. You only need to do this once — your settings are saved and the app auto-refreshes job listings in the background from then on.
+The first time you open jobPilot, a five-step wizard walks you through everything. Progress dots at the top of the screen track where you are. You only need to do this once — your settings are saved and the app auto-refreshes job listings in the background from then on.
 
 == Step 1 — Welcome
 
-#placeholder("01-wizard-welcome.png")
+#shot("01-wizard-welcome.png")
 #v(8pt)
 
-The welcome screen explains what the wizard will do. Click *Get Started* to begin.
+The welcome screen outlines the four things the wizard will do. Click *Get Started →* to begin.
 
 == Step 2 — Upload Your Resume
 
-#placeholder("02-wizard-upload.png")
+#shot("02-wizard-upload.png")
 #v(8pt)
 
 #steps((
-  [Click the upload area or drag your resume file onto it. PDF and DOCX formats are supported (max 5 MB).],
-  [Once the filename appears in green, the *Extract resume* button activates.],
+  [Click the upload area or drag your resume file onto it. PDF and DOCX are supported (max 5 MB).],
+  [Once a filename appears, the *Extract resume* button activates.],
   [Click *Extract resume*. Claude reads your file and pulls out your contact information, work history, skills, and summary. This usually takes 10–20 seconds.],
 ))
 
-#tip[The more complete your resume, the better your match scores will be. If your resume is sparse in any area, you can fill in the gaps on the Resume page later (Section 5).]
-
 == Step 3 — Review the Extraction
 
-#placeholder("03-wizard-confirm.png")
+#shot("03-wizard-confirm.png")
 #v(8pt)
 
-jobPilot shows you what it extracted. Fields highlighted in yellow need your attention — they were low-confidence or missing.
+jobPilot shows you what Claude extracted. Review everything before continuing.
 
 #steps((
   [Check your name, email, phone, and location. Correct anything that looks wrong.],
-  [Review the skills list. Add anything that's missing or remove things that aren't relevant.],
-  [Your work experience is shown as a read-only preview here. You can edit it in detail later on the Resume page.],
-  [Click *Looks good →* when you're satisfied.],
+  [Review the *Professional summary* — edit it directly if needed.],
+  [Check the *Skills* list. Add anything missing or remove things that aren't relevant to your search.],
+  [Your work experience is shown as a read-only preview. You can edit each role in detail later on the Resume page.],
+  [Click *Looks good →* when satisfied, or *Re-upload* to start over with a different file.],
 ))
 
 == Step 4 — Configure Your Search
 
-#placeholder("04-wizard-search.png")
+#shot("04-wizard-search.png")
 #v(8pt)
 
-This is where you tell jobPilot what to look for.
+#label-row((
+  ("Location",          "Your city or zip code. Set a search radius (miles) to control how far out listings are pulled."),
+  ("Remote jobs",       "Off by default. Check this to include remote-eligible listings alongside local results."),
+  ("Keywords",          "Job titles or terms matched independently against listing titles (OR logic, case-insensitive). Shorter phrases return more results."),
+  ("Seniority filter",  "Narrows results to a specific level. Leave blank to see all levels."),
+  ("Target companies",  "Companies you specifically want to work at. Use Find similar companies to let AI expand the list based on what you enter."),
+))
 
-#grid(columns: (1fr, 1fr), gutter: 12pt,
-  stack(dir: ttb, spacing: 6pt,
-    text(weight: "bold", size: 10.5pt)[Location],
-    text(size: 10pt)[Enter your city or zip code and choose a search radius. Listings within that radius will be included.],
-  ),
-  stack(dir: ttb, spacing: 6pt,
-    text(weight: "bold", size: 10.5pt)[Remote jobs],
-    text(size: 10pt)[Off by default. Turn it on to include remote-eligible listings alongside local ones.],
-  ),
-  stack(dir: ttb, spacing: 6pt,
-    text(weight: "bold", size: 10.5pt)[Keywords],
-    text(size: 10pt)[Job titles or terms to match against listings. Each keyword is matched independently — shorter phrases cast a wider net.],
-  ),
-  stack(dir: ttb, spacing: 6pt,
-    text(weight: "bold", size: 10.5pt)[Target companies],
-    text(size: 10pt)[Companies you specifically want to work at. Use *Find similar companies* to let AI suggest additions based on your list.],
-  ),
-)
-
-#v(10pt)
-#callout[Keywords use OR logic and substring matching. "Engineering Manager" will match "Senior Engineering Manager", "Lead Engineering Manager", and so on. Start broad — you can tighten the filter later in Settings.]
+#v(6pt)
+#callout["Engineering Manager" matches "Senior Engineering Manager", "Lead Engineering Manager", and more. Start broad — you can tighten the filter after seeing your first results.]
 
 == Step 5 — Your First Search
 
-#placeholder("05-first-run.png")
+#shot("05-first-run.png")
 #v(8pt)
 
-jobPilot kicks off a search immediately. A progress indicator shows each stage as it runs (fetching listings, scoring matches, ranking results). This usually takes 1–3 minutes depending on result volume.
+jobPilot kicks off a search immediately. When it finishes, the screen shows a summary: how many new jobs were found, how many scored as matches, and how long it took. Click *View matches →* to see your results.
 
-When it finishes, you're taken directly to your Matches list.
+#tip[The first run after setup may return fewer results than later runs — the scraper builds up its cache over time. The app auto-refreshes every 12 hours so your list grows with each cycle.]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3 — BROWSING YOUR MATCHES
@@ -273,40 +262,35 @@ When it finishes, you're taken directly to your Matches list.
 
 = 3. Browsing Your Matches
 
-#placeholder("06-matches-list.png")
+#shot("06-matches-list.png", height: 340pt)
 #v(8pt)
 
-The Matches page is your home base. Every job jobPilot found is listed here, sorted by how well it fits your profile.
+The Matches page is your home base. Every job jobPilot found is listed here, sorted by how well it fits your profile. The search summary bar at the top shows your active keywords, location, and filters — click *Edit search* to adjust them at any time.
 
 == Reading the list
 
-Each row shows:
+#label-row((
+  ("Score",           "A percentage reflecting how closely the job matches your resume. 70%+ is worth a close look."),
+  ("Why it fits",     "A one-paragraph AI summary explaining the match — read this first before clicking into a job."),
+  ("Salary",          "Shown when the listing includes it. Many postings don't disclose salary upfront."),
+  ("Status",          "Where you are in the application process. Update it as you progress."),
+  ("Tailored resume ↗", "Appears in green when a tailored resume has already been generated for this job."),
+))
 
-#grid(columns: (80pt, 1fr), gutter: 8pt,
-  text(weight: "bold", size: 10pt)[Score],
-  text(size: 10pt)[A percentage from 0–100 reflecting how closely the job matches your resume. 70+ is a strong match worth reviewing.],
-  text(weight: "bold", size: 10pt)[Company & Title],
-  text(size: 10pt)[Click anywhere on the row to open the full job detail.],
-  text(weight: "bold", size: 10pt)[Location],
-  text(size: 10pt)[City or "Remote". Listings with both an office and remote option may show the office city.],
-  text(weight: "bold", size: 10pt)[Salary],
-  text(size: 10pt)[Shown when the listing includes it. Many listings don't disclose salary.],
-  text(weight: "bold", size: 10pt)[Status],
-  text(size: 10pt)[Where you are in the application process for this role.],
-)
+== Adding your own listing
+
+Use *+ Add your own job listing* to paste in a role you found elsewhere. jobPilot will score and analyze it the same way as scraped listings.
 
 == Keyboard shortcuts
 
-You can navigate the list without touching your mouse:
-
-#grid(columns: (60pt, 1fr), gutter: 6pt,
+#grid(columns: (70pt, 1fr), gutter: 6pt,
   ..for (key, action) in (
-    ("j / ↓",    "Move to next job"),
-    ("k / ↑",    "Move to previous job"),
-    ("Enter / D","Open job details"),
-    ("X",        "Dismiss this match"),
-    ("?",        "Show all shortcuts"),
-    ("Esc",      "Close / deselect"),
+    ("j / ↓",     "Move to next job"),
+    ("k / ↑",     "Move to previous job"),
+    ("Enter / D", "Open job details"),
+    ("X",         "Dismiss this match"),
+    ("?",         "Show all shortcuts"),
+    ("Esc",       "Close / deselect"),
   ) { (
     rect(inset: (x: 5pt, y: 2pt), stroke: 0.5pt + border, radius: 3pt,
       text(size: 9pt, font: "Courier New")[#key]),
@@ -322,33 +306,51 @@ You can navigate the list without touching your mouse:
 
 == The job detail page
 
-#placeholder("07-job-detail.png")
+#shot("07-job-detail.png", height: 380pt)
 #v(8pt)
 
-Click any row in the matches list to open the job detail page. You'll see the full job description (fetched directly from the source where possible), match score breakdown, and actions.
+Click any row in the matches list to open the job detail page. The main panel shows three AI-generated sections:
 
-The *Application status* dropdown in the top-right tracks where you are with this role. Update it as you progress — the status is reflected in the matches list so you always have a clear picture of your pipeline.
+#label-row((
+  ("Why it fits",              "A narrative explanation of why this role matches your background specifically."),
+  ("Key requirements",         "The most important things the employer is asking for, extracted from the job description."),
+  ("Interview talking points", "Specific angles to emphasize when interviewing — drawn from your resume and the job's priorities."),
+))
 
-== Generating a tailored resume analysis
+The right sidebar holds the action panel:
 
-#placeholder("08-tailor-modal.png")
+- *Application status* — track this role through your pipeline (New → Applied → Interviewing → Offer → Rejected)
+- *Re-analyze* — re-run the AI analysis after you've updated your resume or if the job description changed (~\$0.03)
+- *Generate Tailored Resume* — opens the resume edit modal (see below)
+- *Interview Q&A Guide* — generates a set of likely interview questions with suggested answers tailored to this role (~\$0.03)
+
+== Generating a tailored resume
+
+Clicking *Generate Tailored Resume* opens a modal. If this job hasn't been analyzed yet, the analysis starts automatically — no extra clicks.
+
+*Step 1 — Analysis runs:*
+
+#shot("08-tailor-loading.png")
 #v(8pt)
 
-Click *Generate Tailored Resume* to open the tailor panel. If the job hasn't been analyzed yet, the analysis starts automatically — no extra clicks needed.
+A spinner confirms the analysis is in progress. This takes 20–40 seconds and costs roughly \$0.03 via Claude.
 
-The analysis produces three things:
+*Step 2 — Review and select edits:*
 
-#grid(columns: (110pt, 1fr), gutter: 8pt,
-  text(weight: "bold", size: 10pt)[Key requirements],
-  text(size: 10pt)[The most important things the employer is looking for, each rated as a strong match, partial match, or gap based on your resume.],
-  text(weight: "bold", size: 10pt)[Suggested edits],
-  text(size: 10pt)[Specific changes to your resume wording, ordering, or emphasis that would improve how you present for this role.],
-  text(weight: "bold", size: 10pt)[Gap analysis],
-  text(size: 10pt)[Skills or experience the job asks for that aren't well-represented in your resume — useful for deciding what to address in a cover letter.],
-)
+#shot("08-tailor-results.png", height: 400pt)
+#v(8pt)
 
-#v(10pt)
-#callout[*Re-analyze* is available if the job description was updated or you've edited your resume since the last analysis. Each analysis costs roughly \$0.05–0.10 via the Anthropic API.]
+Once complete, the modal shows a side-by-side diff of your resume bullets. For each suggested change you'll see:
+
+#label-row((
+  ("Current",   "Your existing resume bullet, shown with strikethrough."),
+  ("Suggested", "The AI-proposed rewrite, shown in green. Language is tightened and aligned to the job's specific terminology."),
+  ("Rationale", "A one-line explanation of why this edit improves your fit for this role."),
+))
+
+Use the checkboxes to select which edits to apply. *Select all* / *Deselect all* controls let you accept or review everything in bulk. When you're satisfied, click *Generate PDF* to produce a tailored resume PDF with your selected edits applied.
+
+#callout[Bullets are always reordered by relevance to the role — even unchecked edits benefit from the reordering. The PDF is the deliverable; your stored resume profile is unchanged.]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 5 — MANAGING YOUR RESUME
@@ -356,32 +358,35 @@ The analysis produces three things:
 
 = 5. Managing Your Resume
 
-#placeholder("09-resume-editor.png")
+The *Resume* page (accessible from the nav bar) lets you view and edit every piece of data jobPilot knows about you. Changes save to your local profile and apply to all future match scoring and tailoring runs.
+
+== Contact, summary, and skills
+
+#shot("09-resume-top.png", height: 360pt)
 #v(8pt)
 
-The *Resume* page (accessible from the nav bar) lets you view and edit every piece of data jobPilot knows about you. Changes you make here are reflected immediately in all future match scoring and tailoring.
+The top of the page covers three sections:
 
-== Sections
+*Contact* — Name, professional title, email, phone, location, LinkedIn, GitHub, and website. Keep these current so generated PDFs always have accurate headers.
 
-*Contact* — Name, title, email, phone, location, LinkedIn, GitHub, and website.
+*Professional Summary* — Edit directly, or use the *✦ AI rewrite help* panel. Expand it, describe your recent accomplishments in plain language (specific numbers and outcomes work best), and click *Suggest summary*. Claude drafts an improved 2–5 sentence version. Click *Use this* to apply it or *Discard* to ignore it.
 
-*Professional Summary* — Your career summary. Edit it directly, or use the AI rewrite helper.
+*Skills* — One skill per line. Add, remove, or reword freely. This list feeds directly into match scoring — the more accurate it is, the better your results.
 
-*Skills* — One skill per line. Edit freely — add, remove, or reword anything. The full list is used in match scoring.
+== Experience, education, and adding new roles
 
-*Experience* — Your work history, broken into companies and positions. Each position has a title, dates, and achievement bullets (one per line).
+#shot("09-resume-bottom.png")
+#v(8pt)
+
+The lower sections cover your work history and education, plus a fast-entry path for new roles:
+
+*Experience* — Each company and position is fully editable. Achievements are stored one per line — edit them directly to sharpen your bullets between applications.
 
 *Education* — Institution, degree, and graduation year for each entry.
 
-== AI summary rewrite
+*Add new experience* — Describe a role in plain language and Claude structures it into the correct format automatically when you save. No need to worry about field names or formatting.
 
-Expand the *✦ AI rewrite help* panel under the Summary section. Describe your recent accomplishments in plain language — specific numbers and outcomes work best — and click *Suggest summary*. Claude drafts an improved 2–5 sentence summary. Click *Use this* to apply it, or *Discard* to ignore it.
-
-#tip[Be specific: "Led payments platform that launched Apple in-app purchases, generating \$26M in first 6 months" produces much better results than "Managed a payments team".]
-
-== Adding new experience
-
-The *Add new experience* card at the bottom accepts freeform text. Describe a role in plain language — company, title, dates, and what you did — and Claude structures it into the correct format when you save. No need to worry about formatting.
+#tip[Be specific when adding experience: "Led payments platform that launched Apple in-app purchases, generating \$26M in first 6 months" produces much better bullets than "Managed a payments team".]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 6 — SETTINGS
@@ -389,20 +394,14 @@ The *Add new experience* card at the bottom accepts freeform text. Describe a ro
 
 = 6. Settings
 
-#placeholder("10-settings.png")
+#shot("10-settings.png")
 #v(8pt)
 
-The Settings page covers two areas:
+The Settings page has two controls:
 
-== API keys
+*Anthropic API key* — Paste your key here. jobPilot stores it locally and never transmits it anywhere except the Anthropic API. Use the *Test key* button to verify it's valid before saving.
 
-Enter your Anthropic and Adzuna credentials here. These are stored locally in `~/.jobpilot/` and never transmitted anywhere except the respective APIs.
-
-== Search parameters
-
-Update your location, radius, keywords, seniority filter, remote preference, and target company list at any time. Changes take effect on the next search run.
-
-You can also trigger a manual refresh from this page without waiting for the 12-hour auto-refresh cycle.
+*Spending limit* — Set a monthly budget between \$0.50 and \$50.00. jobPilot will warn you when you approach this limit. The default is \$5.00/month — enough for weeks of normal use.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 7 — UNDERSTANDING COSTS
@@ -428,18 +427,19 @@ jobPilot uses your Anthropic API key directly. You pay Anthropic; jobPilot itsel
     )
     v(5pt)
   }
-  #row("Resume extraction",        "~\$0.05",       "Once, during setup")
-  #row("Match scoring (per run)",  "~\$0.01–0.03",  "Every 12 hrs (auto) or on-demand")
-  #row("Tailor analysis (per job)","~\$0.05–0.10",  "When you click Generate")
-  #row("AI summary rewrite",       "~\$0.03",       "When you click Suggest summary")
-  #row("New experience parse",     "~\$0.01",       "When you save new experience text")
+  #row("Resume extraction",           "~\$0.05",       "Once, during setup")
+  #row("Match scoring (per run)",      "~\$0.01–0.03",  "Every 12 hrs (auto) or on-demand")
+  #row("Tailor analysis (per job)",    "~\$0.03",       "When Generate Tailored Resume is clicked")
+  #row("Interview Q&A Guide",          "~\$0.03",       "When Interview Q&A Guide is clicked")
+  #row("AI summary rewrite",           "~\$0.03",       "When Suggest summary is clicked")
+  #row("New experience parse",         "~\$0.01",       "When new experience text is saved")
 ]
 
 #v(10pt)
 
-The *cost meter* in the top-right nav bar shows your running total for the current session. Check the Settings page for cumulative spend.
+The *cost meter* in the top-right nav bar (e.g. *\$0.21 / \$5.00 this month*) shows your running spend against your monthly budget at a glance.
 
-#callout[A \$10 Anthropic credit will cover several weeks of normal use — roughly 5–10 search runs plus 20–30 tailor analyses.]
+#callout[A \$10 Anthropic credit covers several weeks of normal use — roughly 5–10 search runs plus 20–30 tailor analyses and interview guides.]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 8 — TIPS & TROUBLESHOOTING
@@ -450,24 +450,24 @@ The *cost meter* in the top-right nav bar shows your running total for the curre
 == Getting better matches
 
 - *Shorter keywords beat longer ones.* "Engineering Manager" returns more results than "Senior Engineering Manager, Platform."
-- *Add target companies.* Even a short list meaningfully improves ranking — the scorer gives a boost to roles at companies you care about.
-- *Keep your resume current.* Match scoring runs against whatever's in your profile. If you've updated your skills or changed roles, update your Resume page first.
+- *Add target companies.* Even a short list meaningfully improves ranking — the scorer gives a boost to roles at companies you care about. Use *Find similar companies* to expand it with AI suggestions.
+- *Keep your resume current.* Match scoring runs against whatever's in your profile. Update your Resume page before running a fresh search.
 
-== Navigating back to the wizard
+== Re-running the wizard
 
-If you want to re-run the wizard (for example, to re-upload a new resume version), navigate directly to `http://127.0.0.1:8765/wizard/step/0`. To start completely fresh, delete `~/.jobpilot/profile.json` before visiting that URL.
+To revisit any setup step, navigate directly to `http://127.0.0.1:8765/wizard/step/0`. To start completely fresh (re-upload a new resume), delete `~/.jobpilot/profile.json` before visiting that URL.
 
 == The app isn't opening
 
-jobPilot runs on port 8765. If the browser doesn't open automatically, navigate to `http://127.0.0.1:8765` manually. If the page doesn't load, check that the app process is running (look for the jobPilot icon in your system tray / menu bar).
+jobPilot runs on port 8765. If the browser doesn't open automatically, navigate to `http://127.0.0.1:8765` manually. If the page doesn't load, check that the app process is running — look for the jobPilot icon in your system tray or menu bar.
 
 == "No matches found"
 
-If a search returns nothing, try broadening your keywords (remove seniority prefixes, use shorter phrases) or increasing your search radius. You can also check Settings to confirm your Adzuna credentials are valid.
+Try broadening your keywords (remove seniority prefixes, use shorter phrases) or increasing your search radius. You can also click *Refresh* on the Matches page to trigger an immediate re-scan.
 
 == API errors
 
-All API errors are shown inline. If you see a message about an invalid key, double-check your credentials in Settings. If calls are failing intermittently, it's usually a temporary issue with the upstream API — the next auto-refresh will retry.
+All API errors are shown inline. If you see an invalid key message, double-check your credentials in Settings and use the *Test key* button. Intermittent failures are usually temporary upstream issues — the next auto-refresh will retry automatically.
 
 #v(30pt)
 #align(center)[
