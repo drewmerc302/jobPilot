@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}My Resume — jobPilot{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <h1 style="margin:0;font-size:22px">My Resume</h1>
+      <p class="muted" style="margin:4px 0 0;font-size:13px">Edits save to your local profile and apply to all future tailoring.</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      {% if saved %}
+      <span style="color:var(--green);font-size:13px;font-weight:600">✓ Saved</span>
+      {% endif %}
+      <button form="profile-form" type="submit" class="btn btn-primary btn-sm">Save changes</button>
+    </div>
+  </div>
+
+  <form id="profile-form" method="post" action="/profile/save">
+
+    {# ── Contact ── #}
+    <div class="card" style="padding:20px;margin-bottom:16px">
+      <h3 style="margin:0 0 14px;font-size:15px">Contact</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-row" style="margin:0">
+          <label for="pf-name">Name</label>
+          <input id="pf-name" name="name" type="text" value="{{ profile.name or '' }}" style="margin-top:4px">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label for="pf-title">Professional title</label>
+          <input id="pf-title" name="title" type="text" value="{{ profile.title or '' }}" style="margin-top:4px">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label for="pf-email">Email</label>
+          <input id="pf-email" name="email" type="email" value="{{ profile.email or '' }}" style="margin-top:4px">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label for="pf-phone">Phone</label>
+          <input id="pf-phone" name="phone" type="text" value="{{ profile.phone or '' }}" style="margin-top:4px">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label for="pf-location">Location</label>
+          <input id="pf-location" name="location" type="text" value="{{ profile.location or '' }}" style="margin-top:4px">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label for="pf-linkedin">LinkedIn</label>
+          <input id="pf-linkedin" name="linkedin" type="text" value="{{ profile.linkedin or '' }}" placeholder="linkedin.com/in/…" style="margin-top:4px">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label for="pf-github">GitHub</label>
+          <input id="pf-github" name="github" type="text" value="{{ profile.github or '' }}" placeholder="github.com/…" style="margin-top:4px">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label for="pf-website">Website</label>
+          <input id="pf-website" name="website" type="text" value="{{ profile.website or '' }}" placeholder="https://…" style="margin-top:4px">
+        </div>
+      </div>
+    </div>
+
+    {# ── Professional Summary ── #}
+    <div class="card" style="padding:20px;margin-bottom:16px">
+      <h3 style="margin:0 0 14px;font-size:15px">Professional Summary</h3>
+      <textarea id="summary-textarea" name="summary" rows="5"
+                style="font-size:14px;line-height:1.6;resize:vertical">{{ profile.summary or '' }}</textarea>
+
+      {# AI rewrite helper — separate HTMX sub-form inside the main form #}
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;font-size:13px;color:var(--blue);font-weight:500;user-select:none">
+          ✦ AI rewrite help
+        </summary>
+        <div style="margin-top:10px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+          <label for="accomplishments" style="font-size:13px;font-weight:600">
+            Describe your recent accomplishments and what makes you stand out
+          </label>
+          <p class="muted" style="font-size:12px;margin:3px 0 6px">
+            Be specific — numbers, scope, outcomes. Claude will draft an improved summary from your notes and the existing text above.
+          </p>
+          <textarea id="accomplishments" name="accomplishments" rows="4"
+                    style="font-size:13px;resize:vertical;margin-bottom:8px"
+                    placeholder="e.g. Led payments platform that launched Apple in-app purchases generating $26M in first 6 months. Grew org from 8 to 25 engineers. Reduced P1 incident rate 60% through systematic root-cause work…"></textarea>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button type="button" class="btn btn-outline btn-sm"
+                    hx-post="/profile/suggest-summary"
+                    hx-target="#summary-suggestion"
+                    hx-swap="innerHTML"
+                    hx-include="#summary-textarea,#accomplishments"
+                    onclick="this.disabled=true;this.querySelector('.btn-label').textContent='Thinking…';this.querySelector('.spin-icon').style.display='inline-block'"
+                    hx-on::after-request="this.disabled=false;this.querySelector('.btn-label').textContent='Suggest summary';this.querySelector('.spin-icon').style.display='none'">
+              <span class="spin-icon" style="display:none;width:12px;height:12px;border:2px solid #aaa;border-top-color:#555;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px"></span><span class="btn-label">Suggest summary</span>
+            </button>
+            <span class="muted" style="font-size:11px">~$0.03 via Claude · 10–20 seconds</span>
+          </div>
+          <div id="summary-suggestion"></div>
+        </div>
+      </details>
+    </div>
+
+    {# ── Skills ── #}
+    <div class="card" style="padding:20px;margin-bottom:16px">
+      <h3 style="margin:0 0 4px;font-size:15px">Skills</h3>
+      <p class="muted" style="font-size:12px;margin:0 0 10px">One skill per line. Edit freely — add, remove, or reword.</p>
+      <textarea name="skills_text" rows="14"
+                style="font-size:12px;line-height:1.7;resize:vertical;font-family:inherit">{{ skills_text }}</textarea>
+    </div>
+
+    {# ── Experience ── #}
+    <div class="card" style="padding:20px;margin-bottom:16px">
+      <h3 style="margin:0 0 16px;font-size:15px">Experience</h3>
+
+      {% for exp in (profile.experience or []) %}
+      {% set exp_idx = loop.index0 %}
+      <div style="border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+
+        {# Company header #}
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Company</label>
+            <input name="exp_{{ exp_idx }}_company" type="text" value="{{ exp.company or '' }}"
+                   style="margin-top:4px;font-weight:600">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Location</label>
+            <input name="exp_{{ exp_idx }}_location" type="text" value="{{ exp.location or '' }}"
+                   style="margin-top:4px">
+          </div>
+        </div>
+
+        {# Positions #}
+        {% for pos in (exp.positions or []) %}
+        {% set pos_idx = loop.index0 %}
+        <div style="margin-left:12px;padding-left:14px;border-left:3px solid var(--border);margin-bottom:{% if not loop.last %}16px{% else %}0{% endif %}">
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:8px">
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Title</label>
+              <input name="exp_{{ exp_idx }}_pos_{{ pos_idx }}_title" type="text"
+                     value="{{ pos.title or '' }}" style="margin-top:4px">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Dates</label>
+              <input name="exp_{{ exp_idx }}_pos_{{ pos_idx }}_dates" type="text"
+                     value="{{ pos.dates or '' }}" style="margin-top:4px">
+            </div>
+          </div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">
+            Achievements <span style="font-weight:400;text-transform:none;letter-spacing:0">(one per line)</span>
+          </label>
+          <textarea name="exp_{{ exp_idx }}_pos_{{ pos_idx }}_achievements"
+                    rows="{{ [6, (pos.achievements or [])|length + 1]|max }}"
+                    style="margin-top:4px;font-size:12px;line-height:1.6;resize:vertical">{{ (pos.achievements or []) | join('\n') }}</textarea>
+        </div>
+        {% endfor %}
+
+      </div>
+      {% endfor %}
+    </div>
+
+    {# ── Education ── #}
+    {% if profile.education %}
+    <div class="card" style="padding:20px;margin-bottom:16px">
+      <h3 style="margin:0 0 14px;font-size:15px">Education</h3>
+      {% for edu in profile.education %}
+      {% set edu_idx = loop.index0 %}
+      <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px;{% if not loop.last %}margin-bottom:12px{% endif %}">
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Institution</label>
+          <input name="edu_{{ edu_idx }}_institution" type="text" value="{{ edu.institution or '' }}" style="margin-top:4px">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Degree</label>
+          <input name="edu_{{ edu_idx }}_degree" type="text" value="{{ edu.degree or '' }}" style="margin-top:4px">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Year</label>
+          <input name="edu_{{ edu_idx }}_graduation_year" type="text" value="{{ edu.graduation_year or '' }}" style="margin-top:4px">
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── Add new experience ── #}
+    <div class="card" style="padding:20px;margin-bottom:16px;border-style:dashed">
+      <h3 style="margin:0 0 4px;font-size:15px">Add new experience</h3>
+      <p class="muted" style="font-size:13px;margin:0 0 10px">
+        Describe a role in plain language — Claude will structure it into the right format when you save.
+      </p>
+      <textarea name="new_experience" rows="4"
+                style="font-size:13px;resize:vertical"
+                placeholder="e.g. I worked at Acme Corp as VP of Engineering from 2024 to present. Led a platform rebuild that cut costs 40% and grew the team from 10 to 30 engineers across 3 locations…"></textarea>
+      <p class="muted" style="font-size:11px;margin:4px 0 0">~$0.01 via Claude · parsed automatically on save</p>
+    </div>
+
+    {# ── Bottom save ── #}
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">
+      {% if saved %}
+      <span style="color:var(--green);font-size:13px;font-weight:600;align-self:center">✓ Saved</span>
+      {% endif %}
+      <button type="submit" class="btn btn-primary">Save changes</button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

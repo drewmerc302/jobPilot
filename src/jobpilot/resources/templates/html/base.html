@@ -12,6 +12,7 @@
     <span class="nav-brand">jobPilot</span>
     {% block nav_links %}
     <a href="/matches" {% if request.url.path.startswith('/matches') %}aria-current="page"{% endif %}>Matches</a>
+    <a href="/profile" {% if request.url.path.startswith('/profile') %}aria-current="page"{% endif %}>Resume</a>
     <a href="/settings" {% if request.url.path.startswith('/settings') %}aria-current="page"{% endif %}>Settings</a>
     {% endblock %}
     <span class="nav-spacer"></span>

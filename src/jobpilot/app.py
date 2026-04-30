@@ -143,6 +143,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     from jobpilot.routes.api import router as api_router
     from jobpilot.routes.matches import router as matches_router
+    from jobpilot.routes.profile import router as profile_router
     from jobpilot.routes.search_params import router as search_params_router
     from jobpilot.routes.settings import router as settings_router
     from jobpilot.routes.wizard import router as wizard_router
@@ -151,6 +152,7 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     app.include_router(wizard_router)
     app.include_router(matches_router)
+    app.include_router(profile_router)
     app.include_router(settings_router)
     app.include_router(search_params_router)
     app.include_router(api_router)
