@@ -33,7 +33,42 @@
   </div>
 
   <div class="detail-grid">
-    {# ── Left: job info + all actions ── #}
+    {# ── Left (wide): match analysis ── #}
+    <div>
+      <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">Your Match Analysis</h2>
+
+      {% if match and match.match_reason %}
+      <div class="card suggestions-panel">
+        <h3>Why it fits</h3>
+        <p style="font-size:14px">{{ match.match_reason }}</p>
+      </div>
+      {% endif %}
+
+      <div id="analysis-panels">
+        {% if has_analysis %}
+        {% include "_partials/analysis_panels.html" %}
+        {% elif can_act %}
+        <div class="card suggestions-panel" style="padding:20px">
+          <p class="muted" style="font-size:14px;margin:0">
+            Click <strong>Analyze for this role</strong> in the sidebar to get keyword gaps, suggested edits, and talking points.
+          </p>
+        </div>
+        {% else %}
+        <div class="card suggestions-panel">
+          <p class="muted" style="font-size:14px;margin:0">Add your own API key to analyze this role.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if application and application.notes %}
+      <div class="card suggestions-panel">
+        <h3>Notes</h3>
+        <p style="font-size:14px;white-space:pre-wrap">{{ application.notes }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {# ── Right (sidebar): actions + description ── #}
     <div>
       <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">About This Role</h2>
 
@@ -54,22 +89,22 @@
           </div>
         </div>
 
-        {# Row 2: all action buttons #}
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        {# Row 2: action buttons #}
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
 
           {# Analyze or Re-analyze — form POST so page reloads with fresh state #}
           {% if can_act %}
             {% if has_analysis %}
             <form method="post" action="/matches/{{ job.id }}/analyze?force=1&redirect=1"
-                  style="display:inline"
+                  style="display:contents"
                   onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Re-analyzing…'">
-              <button type="submit" class="btn btn-outline btn-sm">↻ Re-analyze (~$0.03)</button>
+              <button type="submit" class="btn btn-outline btn-sm" style="width:100%">↻ Re-analyze (~$0.03)</button>
             </form>
             {% else %}
             <form method="post" action="/matches/{{ job.id }}/analyze?redirect=1"
-                  style="display:inline"
+                  style="display:contents"
                   onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Analyzing…'">
-              <button type="submit" class="btn btn-primary btn-sm">Analyze for this role (~$0.03)</button>
+              <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Analyze for this role (~$0.03)</button>
             </form>
             {% endif %}
           {% endif %}
@@ -77,12 +112,12 @@
           {# Generate Tailored Resume — opens modal #}
           {% if has_analysis %}
             {% if can_act %}
-            <button type="button" class="btn btn-primary btn-sm"
+            <button type="button" class="btn btn-primary btn-sm" style="width:100%"
                     onclick="document.getElementById('tailor-modal').showModal()">
               Generate Tailored Resume
             </button>
             {% else %}
-            <button type="button" class="btn btn-primary btn-sm" disabled style="opacity:.45;cursor:not-allowed">
+            <button type="button" class="btn btn-primary btn-sm" style="width:100%" disabled style="opacity:.45;cursor:not-allowed">
               Generate Tailored Resume
             </button>
             {% endif %}
@@ -90,7 +125,7 @@
 
           {# Interview Q&A Guide #}
           {% if can_act %}
-          <button class="btn btn-outline btn-sm"
+          <button class="btn btn-outline btn-sm" style="width:100%"
                   hx-post="/matches/{{ job.id }}/interview-prep"
                   hx-target="#prep-section"
                   hx-swap="innerHTML">
@@ -98,59 +133,24 @@
             {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %} (~$0.03)
           </button>
           {% else %}
-          <button class="btn btn-outline btn-sm" disabled style="opacity:.45;cursor:not-allowed">
+          <button class="btn btn-outline btn-sm" style="width:100%" disabled style="opacity:.45;cursor:not-allowed">
             {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %} (~$0.03)
           </button>
           {% endif %}
 
-          <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+          <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="width:100%;text-align:center">
             Full Job Listing (O) ↗
           </a>
         </div>
       </div>
 
       <div class="card">
-        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;flex-wrap:wrap">
           <h3 style="margin:0;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Description</h3>
-          <span style="font-size:11px;color:var(--muted)">(summary — <a href="{{ job.url }}" target="_blank" rel="noopener">full listing ↗</a> for complete details)</span>
+          <span style="font-size:11px;color:var(--muted)">(summary — <a href="{{ job.url }}" target="_blank" rel="noopener">full listing ↗</a>)</span>
         </div>
         <div class="detail-description" style="margin-top:12px">{{ (job.description or '') | clean_html or 'No description available.' }}</div>
       </div>
-    </div>
-
-    {# ── Right: match analysis (informational only) ── #}
-    <div>
-      <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">Your Match Analysis</h2>
-
-      {% if match and match.match_reason %}
-      <div class="card suggestions-panel">
-        <h3>Why it fits</h3>
-        <p style="font-size:14px">{{ match.match_reason }}</p>
-      </div>
-      {% endif %}
-
-      <div id="analysis-panels">
-        {% if has_analysis %}
-        {% include "_partials/analysis_panels.html" %}
-        {% elif can_act %}
-        <div class="card suggestions-panel" style="padding:20px">
-          <p class="muted" style="font-size:14px;margin:0">
-            Click <strong>Analyze for this role</strong> to get keyword gaps, suggested edits, and talking points.
-          </p>
-        </div>
-        {% else %}
-        <div class="card suggestions-panel">
-          <p class="muted" style="font-size:14px;margin:0">Add your own API key to analyze this role.</p>
-        </div>
-        {% endif %}
-      </div>
-
-      {% if application and application.notes %}
-      <div class="card suggestions-panel">
-        <h3>Notes</h3>
-        <p style="font-size:14px;white-space:pre-wrap">{{ application.notes }}</p>
-      </div>
-      {% endif %}
     </div>
   </div>
 

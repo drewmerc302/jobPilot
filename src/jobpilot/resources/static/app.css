@@ -55,7 +55,7 @@ a:hover { text-decoration: underline; }
 }
 
 /* ── Layout ──────────────────────────────────────────────── */
-.page { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+.page { max-width: 1200px; margin: 0 auto; padding: 32px 20px; }
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
