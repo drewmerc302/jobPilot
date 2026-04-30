@@ -14,6 +14,10 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from jobpilot.fetch_description import fetch_full_description, is_snippet
 from jobpilot.ladder import compute_ladder
+from jobpilot.pipeline import run_pipeline
+from jobpilot.scrapers.adzuna import AdzunaScraper
+from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
+from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.steps.interview_prep import generate_interview_prep
 from jobpilot.steps.tailor import ensure_analysis, run_tailor_for_job
 
@@ -85,6 +89,64 @@ async def matches_list(request: Request) -> HTMLResponse:
             "ladder": ladder,
         },
     )
+
+
+@router.post("/matches/refresh")
+async def refresh_matches(request: Request):
+    """Start a pipeline run from the matches page (same logic as wizard step 4)."""
+    db = request.app.state.db
+    config = request.app.state.config
+    profile = request.app.state.profile_store.load()
+    sp = request.app.state.search_params_store.load()
+
+    if not profile or not sp:
+        return RedirectResponse(
+            "/wizard/step/1" if not profile else "/wizard/step/3", status_code=303
+        )
+    if compute_ladder(config, db)["state"] == "gift_exhausted":
+        return RedirectResponse("/settings?key_exhausted=1", status_code=303)
+    if db.count_runs_today() >= config.max_runs_per_day:
+        return RedirectResponse("/matches?refresh_capped=1", status_code=303)
+
+    client = request.app.state.client
+    run_status = request.app.state.run_status
+    run_id = db.start_run()
+    run_status[run_id] = {"stage": "starting", "result": None, "error": None}
+
+    scrapers: list = [JobSpyScraper(sp)]
+    if JooblesScraper.is_configured():
+        scrapers.append(JooblesScraper(sp))
+    if AdzunaScraper.is_configured():
+        scrapers.append(AdzunaScraper(sp))
+
+    def update_stage(stage: str) -> None:
+        run_status[run_id]["stage"] = stage
+
+    async def _run():
+        try:
+            result = await asyncio.to_thread(
+                run_pipeline,
+                db,
+                profile,
+                sp,
+                config,
+                scrapers,
+                client,
+                run_id,
+                update_stage,
+            )
+            run_status[run_id]["stage"] = "done"
+            run_status[run_id]["result"] = result
+        except Exception as exc:
+            logger.error(f"Pipeline run {run_id} failed: {exc}")
+            run_status[run_id]["stage"] = "error"
+            run_status[run_id]["error"] = str(exc)
+
+    task = asyncio.create_task(_run())
+    background_tasks = request.app.state.background_tasks
+    background_tasks.add(task)
+    task.add_done_callback(background_tasks.discard)
+    return RedirectResponse(f"/wizard/step/4?run_id={run_id}", status_code=303)
 
 
 @router.get("/matches/{job_id}", response_class=HTMLResponse)

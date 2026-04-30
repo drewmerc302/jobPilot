@@ -38,7 +38,9 @@
       {% if ladder and ladder.state == "gift_exhausted" %}
       <span class="btn btn-outline btn-sm" style="opacity:.45;cursor:not-allowed" title="Add your own key to refresh">↻ Refresh</span>
       {% else %}
-      <a href="/wizard/step/4" class="btn btn-outline btn-sm">↻ Refresh</a>
+      <form method="post" action="/matches/refresh" style="display:contents">
+        <button type="submit" class="btn btn-outline btn-sm">↻ Refresh</button>
+      </form>
       {% endif %}
       <button type="button" class="btn btn-outline btn-sm"
               onclick="document.getElementById('add-job-modal').showModal()">+ Add job</button>
