@@ -9,10 +9,7 @@
   suggestions.get('suggested_edits') is not none
 ) %}
 {% set can_act = not (ladder and ladder.state == "gift_exhausted") %}
-{% set fresh = request.query_params.get('fresh') == '1' %}
-{% set needs_analysis = can_act and has_full_description and (
-  not has_analysis or (has_analysis and not suggestions.suggested_edits and not fresh)
-) %}
+{% set needs_analysis = can_act and has_full_description and not has_analysis %}
 
 <div class="page">
   <div style="margin-bottom:16px">
@@ -229,98 +226,107 @@
         hx-target="#detail-tailor-slot"
         hx-swap="innerHTML"
         style="display:flex;flex-direction:column;flex:1;min-height:0">
-    <div style="padding:20px;overflow-y:auto;flex:1">
-      {% if suggestions.suggested_edits %}
-      {# State: has suggestions — user reviews and selects edits #}
-      <p class="muted" style="font-size:12px;margin:0 0 10px">
-        Check the edits to include. Bullets are always reordered by relevance.
-      </p>
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <button type="button" class="btn btn-outline btn-sm"
-                onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=true})">
-          Select all
-        </button>
-        <button type="button" class="btn btn-outline btn-sm"
-                onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=false})">
-          Deselect all
-        </button>
-      </div>
-      {% for edit in suggestions.suggested_edits %}
-      <div style="margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
-        <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
-          <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:4px;flex-shrink:0" checked>
-          <div style="flex:1;font-size:13px">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Current</div>
-            <div style="color:var(--muted);text-decoration:line-through;margin-bottom:8px">{{ edit.original }}</div>
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:2px">Suggested</div>
-            <div style="color:var(--green){% if edit.reason %};margin-bottom:8px{% endif %}">{{ edit.suggested }}</div>
-            {% if edit.reason %}
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Rationale</div>
-            <div class="muted" style="font-size:11px">{{ edit.reason }}</div>
-            {% endif %}
-          </div>
-        </label>
-      </div>
-      {% endfor %}
-      {% elif needs_analysis %}
-      {# State: full description available but not yet analyzed (or stale analysis) #}
-      <div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:var(--radius);padding:16px">
-        <p style="margin:0 0 6px;font-size:14px;font-weight:600">Analyze this role first</p>
-        <p class="muted" style="margin:0 0 8px;font-size:13px">
-          jobPilot will compare the job description against your resume, suggest specific edits, and identify keyword gaps. You'll review the suggestions before generating your PDF.
-        </p>
-        <p class="muted" style="margin:0;font-size:11px">~$0.03 via Claude · takes 20–40 seconds</p>
-      </div>
-      {% elif has_analysis and not suggestions.suggested_edits and has_full_description %}
-      {# State: fresh analysis confirmed no edits needed — strong match #}
-      <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
-        <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edits suggested</p>
-        <p class="muted" style="margin:0;font-size:13px">
-          Your resume is already a strong match for this role. Generating the PDF will reorder your bullets by relevance — no text changes.
-        </p>
-      </div>
-      {% else %}
-      {# State: has analysis, no suggestions, snippet only — prompt to paste full description #}
-      <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
-        <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edit suggestions found</p>
-        <p class="muted" style="margin:0 0 14px;font-size:13px">
-          This usually means we only have a short snippet of the job description.
-          Paste the full description for targeted suggestions.
-        </p>
-        <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:inline-flex;margin-bottom:10px">
-          Open Full Listing ↗
-        </a>
-        <button type="button" class="btn btn-primary btn-sm" style="width:100%"
-                onclick="document.getElementById('tailor-modal').close(); document.getElementById('description-modal').showModal()">
-          Paste Full Description to Get Suggestions
-        </button>
-      </div>
-      <p class="muted" style="font-size:12px;margin:0 0 4px;text-align:center">— or generate anyway: bullets reordered by relevance, no text changes —</p>
-      {% endif %}
-    </div>
-    <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div id="tailor-modal-content" style="display:flex;flex-direction:column;flex:1;min-height:0">
       {% if needs_analysis %}
-      <button type="submit" form="analyze-form" class="btn btn-primary btn-sm"
-              onclick="this.disabled=true;this.querySelector('.spin-icon').style.display='inline-block';this.querySelector('.btn-label').textContent='Analyzing… (20–40 sec)'">
-        <span class="spin-icon" style="display:none;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px"></span><span class="btn-label">Analyze this role</span>
-      </button>
+      {# State: full description available but not yet analyzed (or stale analysis) #}
+      <div style="padding:20px;overflow-y:auto;flex:1">
+        <div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:var(--radius);padding:16px">
+          <p style="margin:0 0 6px;font-size:14px;font-weight:600">Analyze this role first</p>
+          <p class="muted" style="margin:0 0 8px;font-size:13px">
+            jobPilot will compare the job description against your resume, suggest specific edits, and identify keyword gaps. You'll review the suggestions before generating your PDF.
+          </p>
+          <p class="muted" style="margin:0;font-size:11px">~$0.03 via Claude · takes 20–40 seconds</p>
+        </div>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button type="button" class="btn btn-primary btn-sm"
+                hx-post="/matches/{{ job.id }}/tailor-analyze"
+                hx-target="#tailor-modal-content"
+                hx-swap="innerHTML"
+                onclick="this.disabled=true;this.querySelector('.spin-icon').style.display='inline-block';this.querySelector('.btn-label').textContent='Analyzing… (20–40 sec)'">
+          <span class="spin-icon" style="display:none;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px"></span><span class="btn-label">Analyze this role</span>
+        </button>
+        <button type="button" class="btn btn-outline btn-sm"
+                onclick="document.getElementById('tailor-modal').close()">
+          Cancel
+        </button>
+      </div>
       {% else %}
-      <button type="submit" class="btn btn-success btn-sm">
-        <span class="htmx-indicator spinner"></span>
-        Generate PDF
-      </button>
+      {# All non-needs-analysis states share the tailor_modal_content partial structure #}
+      <div style="padding:20px;overflow-y:auto;flex:1">
+        {% if suggestions.suggested_edits %}
+        {# State: has suggestions — user reviews and selects edits #}
+        <p class="muted" style="font-size:12px;margin:0 0 10px">
+          Check the edits to include. Bullets are always reordered by relevance.
+        </p>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button type="button" class="btn btn-outline btn-sm"
+                  onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=true})">
+            Select all
+          </button>
+          <button type="button" class="btn btn-outline btn-sm"
+                  onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=false})">
+            Deselect all
+          </button>
+        </div>
+        {% for edit in suggestions.suggested_edits %}
+        <div style="margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+          <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+            <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:4px;flex-shrink:0" checked>
+            <div style="flex:1;font-size:13px">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Current</div>
+              <div style="color:var(--muted);text-decoration:line-through;margin-bottom:8px">{{ edit.original }}</div>
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:2px">Suggested</div>
+              <div style="color:var(--green){% if edit.reason %};margin-bottom:8px{% endif %}">{{ edit.suggested }}</div>
+              {% if edit.reason %}
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Rationale</div>
+              <div class="muted" style="font-size:11px">{{ edit.reason }}</div>
+              {% endif %}
+            </div>
+          </label>
+        </div>
+        {% endfor %}
+        {% elif has_analysis and not suggestions.suggested_edits and has_full_description %}
+        {# State: fresh analysis — strong match #}
+        <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+          <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edits suggested</p>
+          <p class="muted" style="margin:0;font-size:13px">
+            Your resume is already a strong match for this role. Generating the PDF will reorder your bullets by relevance — no text changes.
+          </p>
+        </div>
+        {% else %}
+        {# State: snippet only, no suggestions — prompt to paste full description #}
+        <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+          <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edit suggestions found</p>
+          <p class="muted" style="margin:0 0 14px;font-size:13px">
+            This usually means we only have a short snippet of the job description.
+            Paste the full description for targeted suggestions.
+          </p>
+          <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:inline-flex;margin-bottom:10px">
+            Open Full Listing ↗
+          </a>
+          <button type="button" class="btn btn-primary btn-sm" style="width:100%"
+                  onclick="document.getElementById('tailor-modal').close(); document.getElementById('description-modal').showModal()">
+            Paste Full Description to Get Suggestions
+          </button>
+        </div>
+        <p class="muted" style="font-size:12px;margin:0 0 4px;text-align:center">— or generate anyway: bullets reordered by relevance, no text changes —</p>
+        {% endif %}
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button type="submit" class="btn btn-success btn-sm">
+          <span class="htmx-indicator spinner"></span>
+          Generate PDF
+        </button>
+        <button type="button" class="btn btn-outline btn-sm"
+                onclick="document.getElementById('tailor-modal').close()">
+          Cancel
+        </button>
+      </div>
       {% endif %}
-      <button type="button" class="btn btn-outline btn-sm"
-              onclick="document.getElementById('tailor-modal').close()">
-        Cancel
-      </button>
     </div>
   </form>
 </dialog>
-{% if needs_analysis %}
-<form id="analyze-form" method="post"
-      action="/matches/{{ job.id }}/analyze?redirect=1&force=1&open_tailor=1"></form>
-{% endif %}
 <script>
 (function () {
   var dlg = document.getElementById("tailor-modal");

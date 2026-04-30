@@ -280,6 +280,54 @@ async def dismiss_match(job_id: str, request: Request) -> HTMLResponse:
     return HTMLResponse("")
 
 
+@router.post("/matches/{job_id}/tailor-analyze", response_class=HTMLResponse)
+async def tailor_analyze(job_id: str, request: Request) -> HTMLResponse:
+    """Run analysis in-modal via HTMX; returns tailor_modal_content partial."""
+    db = request.app.state.db
+    config = request.app.state.config
+    client = request.app.state.client
+    templates = request.app.state.templates
+
+    if compute_ladder(config, db)["state"] == "gift_exhausted":
+        return HTMLResponse(
+            "<div style='padding:20px'><span class='error'>Starter credit used up. "
+            "<a href='/settings'>Add your own key →</a></span></div>"
+        )
+
+    job = db.get_job(job_id)
+    if not job:
+        return HTMLResponse(
+            "<div style='padding:20px'><span class='error'>Job not found</span></div>"
+        )
+
+    profile = request.app.state.profile_store.load()
+    if not profile:
+        return HTMLResponse(
+            "<div style='padding:20px'><span class='error'>Profile not found — "
+            "complete onboarding first</span></div>"
+        )
+
+    try:
+        suggestions = await asyncio.to_thread(
+            ensure_analysis, job, profile, db, config, client=client, force=True
+        )
+    except Exception as exc:
+        logger.error(f"tailor-analyze failed for {job_id}: {exc}")
+        return HTMLResponse(
+            f"<div style='padding:20px'><p class='error'>Analysis failed: {exc}</p>"
+            "<div style='padding:12px 0 0'>"
+            "<button type='button' class='btn btn-outline btn-sm' "
+            "onclick='document.getElementById(\"tailor-modal\").close()'>Close</button>"
+            "</div></div>"
+        )
+
+    return templates.TemplateResponse(
+        request,
+        "_partials/tailor_modal_content.html",
+        {"suggestions": suggestions, "job": job},
+    )
+
+
 @router.post("/matches/{job_id}/tailor", response_class=HTMLResponse)
 async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
     """Synchronous tailor for Pass 1. Returns result partial when done."""
@@ -381,12 +429,7 @@ async def analyze_match(job_id: str, request: Request) -> HTMLResponse:
             ensure_analysis, job, profile, db, config, client=client, force=force
         )
         if request.query_params.get("redirect") == "1":
-            suffix = (
-                "?open_tailor=1&fresh=1"
-                if request.query_params.get("open_tailor") == "1"
-                else ""
-            )
-            return RedirectResponse(f"/matches/{job_id}{suffix}", status_code=303)
+            return RedirectResponse(f"/matches/{job_id}", status_code=303)
         ladder = compute_ladder(config, db)
         return templates.TemplateResponse(
             request,

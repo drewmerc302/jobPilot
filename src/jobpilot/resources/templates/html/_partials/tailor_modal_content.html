@@ -1,0 +1,51 @@
+<div style="padding:20px;overflow-y:auto;flex:1">
+{% if suggestions.suggested_edits %}
+<p class="muted" style="font-size:12px;margin:0 0 10px">
+  Check the edits to include. Bullets are always reordered by relevance.
+</p>
+<div style="display:flex;gap:8px;margin-bottom:14px">
+  <button type="button" class="btn btn-outline btn-sm"
+          onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=true})">
+    Select all
+  </button>
+  <button type="button" class="btn btn-outline btn-sm"
+          onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=false})">
+    Deselect all
+  </button>
+</div>
+{% for edit in suggestions.suggested_edits %}
+<div style="margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+  <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+    <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:4px;flex-shrink:0" checked>
+    <div style="flex:1;font-size:13px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Current</div>
+      <div style="color:var(--muted);text-decoration:line-through;margin-bottom:8px">{{ edit.original }}</div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:2px">Suggested</div>
+      <div style="color:var(--green){% if edit.reason %};margin-bottom:8px{% endif %}">{{ edit.suggested }}</div>
+      {% if edit.reason %}
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Rationale</div>
+      <div class="muted" style="font-size:11px">{{ edit.reason }}</div>
+      {% endif %}
+    </div>
+  </label>
+</div>
+{% endfor %}
+{% else %}
+<div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+  <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edits suggested</p>
+  <p class="muted" style="margin:0;font-size:13px">
+    Your resume is already a strong match for this role. Generating the PDF will reorder your bullets by relevance — no text changes.
+  </p>
+</div>
+{% endif %}
+</div>
+<div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <button type="submit" class="btn btn-success btn-sm">
+    <span class="htmx-indicator spinner"></span>
+    Generate PDF
+  </button>
+  <button type="button" class="btn btn-outline btn-sm"
+          onclick="document.getElementById('tailor-modal').close()">
+    Cancel
+  </button>
+</div>
