@@ -3,8 +3,9 @@
 import logging
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 
+from jobpilot.routes.matches import start_pipeline_run
 from jobpilot.search_params import SearchParams
 
 logger = logging.getLogger(__name__)
@@ -68,4 +69,4 @@ async def search_params_save(request: Request) -> HTMLResponse:
     form = await request.form()
     new = _parse_form_to_params(form)
     request.app.state.search_params_store.save(new)
-    return RedirectResponse("/matches", status_code=303)
+    return await start_pipeline_run(request)

@@ -91,9 +91,8 @@ async def matches_list(request: Request) -> HTMLResponse:
     )
 
 
-@router.post("/matches/refresh")
-async def refresh_matches(request: Request):
-    """Start a pipeline run from the matches page (same logic as wizard step 4)."""
+async def start_pipeline_run(request: Request) -> RedirectResponse:
+    """Validate guards, kick off a background pipeline run, redirect to progress page."""
     db = request.app.state.db
     config = request.app.state.config
     profile = request.app.state.profile_store.load()
@@ -147,6 +146,11 @@ async def refresh_matches(request: Request):
     background_tasks.add(task)
     task.add_done_callback(background_tasks.discard)
     return RedirectResponse(f"/wizard/step/4?run_id={run_id}", status_code=303)
+
+
+@router.post("/matches/refresh")
+async def refresh_matches(request: Request):
+    return await start_pipeline_run(request)
 
 
 @router.get("/matches/{job_id}", response_class=HTMLResponse)
