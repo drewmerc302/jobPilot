@@ -40,8 +40,6 @@
   <div class="detail-grid">
     {# ── Left (wide): match analysis ── #}
     <div>
-      <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">Your Match Analysis</h2>
-
       {% if match and match.match_reason %}
       <div class="card suggestions-panel">
         <h3>Why it fits</h3>
@@ -75,8 +73,6 @@
 
     {# ── Right (sidebar): actions + description ── #}
     <div>
-      <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">About This Role</h2>
-
       <div class="card" style="padding:16px 20px;margin-bottom:12px">
 
         {# Row 1: status + generated PDF link #}
@@ -170,7 +166,7 @@
       <div class="card">
         <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;flex-wrap:wrap">
           <h3 style="margin:0;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Description</h3>
-          <span style="font-size:11px;color:var(--muted)">(summary — <a href="{{ job.url }}" target="_blank" rel="noopener">full listing ↗</a>)</span>
+          <a href="{{ job.url }}" target="_blank" rel="noopener" class="muted" style="font-size:11px">Full listing ↗</a>
         </div>
         <div class="detail-description" style="margin-top:12px">{{ (job.description or '') | clean_html or 'No description available.' }}</div>
       </div>
