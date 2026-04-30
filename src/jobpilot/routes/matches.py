@@ -307,10 +307,17 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
     adopt_edits = {
         int(v) for v in form.getlist("edit_index") if str(v).isdigit()
     } or None
+    force_analysis = form.get("force") == "1"
 
     try:
         analysis = await asyncio.to_thread(
-            ensure_analysis, job, profile, db, config, client=client
+            ensure_analysis,
+            job,
+            profile,
+            db,
+            config,
+            client=client,
+            force=force_analysis,
         )
         output_dir = config.output_dir / job_id
         result = await asyncio.to_thread(
