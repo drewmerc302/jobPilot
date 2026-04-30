@@ -119,7 +119,7 @@ async def update_description_and_analyze(
                     f"Analysis failed for {job_id} after description update: {exc}"
                 )
 
-    return RedirectResponse(f"/matches/{job_id}", status_code=303)
+    return RedirectResponse(f"/matches/{job_id}?open_tailor=1", status_code=303)
 
 
 @router.post("/matches/{job_id}/status", response_class=HTMLResponse)

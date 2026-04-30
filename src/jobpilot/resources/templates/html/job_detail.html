@@ -286,4 +286,13 @@
 </script>
 {% endif %}
 
+{% if has_analysis and can_act and request.query_params.get('open_tailor') == '1' %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var dlg = document.getElementById('tailor-modal');
+  if (dlg) dlg.showModal();
+});
+</script>
+{% endif %}
+
 {% endblock %}
