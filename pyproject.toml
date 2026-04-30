@@ -174,8 +174,9 @@ flatpak_runtime_version = "48"
 flatpak_sdk = "org.gnome.Sdk"
 
 [tool.briefcase.app.jobpilot.windows]
+icon = "src/jobpilot/resources/jobpilot"
 requires = [
-    "toga-winforms~=0.5.0",
+    "pywin32>=306",
 ]
 
 # Mobile deployments
