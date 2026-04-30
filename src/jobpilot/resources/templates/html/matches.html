@@ -39,7 +39,7 @@
       <span class="btn btn-outline btn-sm" style="opacity:.45;cursor:not-allowed" title="Add your own key to refresh">↻ Refresh</span>
       {% else %}
       <form method="post" action="/matches/refresh" style="display:contents">
-        <button type="submit" class="btn btn-outline btn-sm">↻ Refresh</button>
+        <button type="submit" class="btn btn-outline btn-sm" data-tooltip="Scan for new listings now. Auto-refresh runs every 12 hours." data-tip-pos="bottom">↻ Refresh</button>
       </form>
       {% endif %}
     </div>
@@ -63,7 +63,8 @@
 
   <div style="margin-bottom:12px;text-align:right">
     <button type="button" class="btn btn-primary btn-sm"
-            onclick="document.getElementById('add-job-modal').showModal()">+ Add your own job listing</button>
+            onclick="document.getElementById('add-job-modal').showModal()"
+            data-tooltip="Add a job you found elsewhere — scored and analyzed the same as scraped listings." data-tip-pos="bottom">+ Add your own job listing</button>
   </div>
 
   {% if not matches %}
@@ -80,9 +81,9 @@
           <th>Company / Role</th>
           <th>Location</th>
           <th>Salary</th>
-          <th style="width:60px">Score</th>
-          <th>Why it fits</th>
-          <th style="width:120px">Status</th>
+          <th style="width:60px" data-tooltip="How closely this role matches your resume. 70%+ is worth a close look.">Score</th>
+          <th data-tooltip="AI explanation of why this job fits your specific background.">Why it fits</th>
+          <th style="width:120px" data-tooltip="Where you are in the application process for this role.">Status</th>
           <th style="width:220px">Actions</th>
         </tr>
       </thead>

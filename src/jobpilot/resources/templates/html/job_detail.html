@@ -82,7 +82,7 @@
         {# Row 1: status + generated PDF link #}
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:12px;color:var(--muted);white-space:nowrap">Application status</span>
+            <span style="font-size:12px;color:var(--muted);white-space:nowrap" data-tooltip="Track your progress: New → Applied → Interviewing → Offer / Rejected">Application status</span>
             {% with job_id=job.id, status=(application.status if application else 'new') %}
             {% include "_partials/status_badge.html" %}
             {% endwith %}
@@ -107,7 +107,7 @@
                   style="display:contents"
                   onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Re-analyzing…'">
               <div>
-                <button type="submit" class="btn btn-outline btn-sm" style="width:100%">↻ Re-analyze</button>
+                <button type="submit" class="btn btn-outline btn-sm" style="width:100%" data-tooltip="Re-run the analysis — useful after updating your resume or if the job posting changed.">↻ Re-analyze</button>
                 <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 via Claude</p>
               </div>
             </form>
@@ -116,7 +116,7 @@
                   style="display:contents"
                   onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Analyzing…'">
               <div>
-                <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Analyze for this role</button>
+                <button type="submit" class="btn btn-primary btn-sm" style="width:100%" data-tooltip="Surface key requirements, resume gaps, and interview angles for this specific role.">Analyze for this role</button>
                 <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 via Claude</p>
               </div>
             </form>
@@ -128,12 +128,14 @@
             {% if has_analysis or has_full_description %}
               {% if match and match.resume_path %}
               <button type="button" class="btn btn-outline btn-sm" style="width:100%"
-                      onclick="document.getElementById('tailor-modal').showModal()">
+                      onclick="document.getElementById('tailor-modal').showModal()"
+                      data-tooltip="Pick updated resume edits and generate a fresh tailored PDF.">
                 ↻ Re-generate resume
               </button>
               {% else %}
               <button type="button" class="btn btn-primary btn-sm" style="width:100%"
-                      onclick="document.getElementById('tailor-modal').showModal(){% if needs_analysis %}; htmx.ajax('POST', '/matches/{{ job.id }}/tailor-analyze', {target: '#tailor-modal-content', swap: 'innerHTML'}){% endif %}">
+                      onclick="document.getElementById('tailor-modal').showModal(){% if needs_analysis %}; htmx.ajax('POST', '/matches/{{ job.id }}/tailor-analyze', {target: '#tailor-modal-content', swap: 'innerHTML'}){% endif %}"
+                      data-tooltip="Review AI-suggested resume edits for this role and generate a tailored PDF.">
                 Generate Tailored Resume
               </button>
               {% endif %}
@@ -155,7 +157,8 @@
             <button class="btn btn-outline btn-sm" style="width:100%"
                     hx-post="/matches/{{ job.id }}/interview-prep"
                     hx-target="#prep-section"
-                    hx-swap="innerHTML">
+                    hx-swap="innerHTML"
+                    data-tooltip="Generate likely interview questions with suggested answers tailored to this role.">
               <span class="htmx-indicator spinner"></span>
               {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %}
             </button>

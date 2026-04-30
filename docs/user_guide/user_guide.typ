@@ -80,22 +80,23 @@
 
 #set text(font: "Helvetica Neue", size: 11pt, fill: dark)
 #set par(leading: 0.7em)
+#show heading: set block(sticky: true)
 #show heading.where(level: 1): it => {
   v(18pt)
   text(size: 16pt, weight: "bold", fill: brand)[#it.body]
   v(2pt)
   line(length: 100%, stroke: 1.5pt + brand)
-  v(10pt)
-}
-#show heading.where(level: 2): it => {
-  v(14pt)
-  text(size: 12pt, weight: "bold")[#it.body]
   v(6pt)
 }
-#show heading.where(level: 3): it => {
+#show heading.where(level: 2): it => {
   v(10pt)
-  text(size: 10.5pt, weight: "bold", fill: muted)[#it.body]
+  text(size: 12pt, weight: "bold")[#it.body]
   v(4pt)
+}
+#show heading.where(level: 3): it => {
+  v(8pt)
+  text(size: 10.5pt, weight: "bold", fill: muted)[#it.body]
+  v(3pt)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

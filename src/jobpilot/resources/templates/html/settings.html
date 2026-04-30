@@ -23,7 +23,7 @@
       <h3 style="margin:0 0 16px;font-size:15px;font-weight:700">Anthropic API key</h3>
 
       <div class="form-row">
-        <label for="api_key">API key</label>
+        <label for="api_key" data-tooltip="Your Anthropic key. Stored locally — only sent to Anthropic's API, never anywhere else.">API key</label>
         <div style="display:flex;gap:8px;align-items:center">
           <input type="password" id="api_key" name="api_key"
                  placeholder="{{ key_hint }}"
@@ -44,7 +44,8 @@
                 hx-include="#api_key"
                 hx-target="#test-key-result"
                 hx-swap="innerHTML"
-                hx-indicator="#test-key-spinner">
+                hx-indicator="#test-key-spinner"
+                data-tooltip="Make a test call to Anthropic to verify your key is valid before saving.">
           <span id="test-key-spinner" class="htmx-indicator spinner"></span>
           Test key
         </button>
@@ -54,7 +55,7 @@
     <div class="card">
       <h3 style="margin:0 0 16px;font-size:15px;font-weight:700">Spending limit</h3>
       <div class="form-row" style="margin-bottom:0">
-        <label for="monthly_budget">Monthly budget</label>
+        <label for="monthly_budget" data-tooltip="jobPilot warns you as you approach this limit. Covers all AI features — scoring, tailoring, Q&A guides.">Monthly budget</label>
         <div style="display:flex;align-items:center;gap:14px;margin-top:6px">
           <input type="range" id="monthly_budget" name="monthly_budget"
                  value="{{ '%.2f'|format(monthly_budget) }}"

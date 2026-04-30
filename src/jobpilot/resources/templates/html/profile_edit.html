@@ -66,7 +66,7 @@
 
       {# AI rewrite helper — separate HTMX sub-form inside the main form #}
       <details style="margin-top:14px">
-        <summary style="cursor:pointer;font-size:13px;color:var(--blue);font-weight:500;user-select:none">
+        <summary style="cursor:pointer;font-size:13px;color:var(--blue);font-weight:500;user-select:none" data-tooltip="Describe your recent accomplishments and Claude will draft an improved 2–5 sentence summary.">
           ✦ AI rewrite help
         </summary>
         <div style="margin-top:10px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
@@ -98,7 +98,7 @@
 
     {# ── Skills ── #}
     <div class="card" style="padding:20px;margin-bottom:16px">
-      <h3 style="margin:0 0 4px;font-size:15px">Skills</h3>
+      <h3 style="margin:0 0 4px;font-size:15px" data-tooltip="These skills feed directly into match scoring. The more accurate this list, the better your results.">Skills</h3>
       <p class="muted" style="font-size:12px;margin:0 0 10px">One skill per line. Edit freely — add, remove, or reword.</p>
       <textarea name="skills_text" rows="14"
                 style="font-size:12px;line-height:1.7;resize:vertical;font-family:inherit">{{ skills_text }}</textarea>
@@ -181,7 +181,7 @@
 
     {# ── Add new experience ── #}
     <div class="card" style="padding:20px;margin-bottom:16px;border-style:dashed">
-      <h3 style="margin:0 0 4px;font-size:15px">Add new experience</h3>
+      <h3 style="margin:0 0 4px;font-size:15px" data-tooltip="Describe a role in plain language — company, title, dates, what you did. Claude structures it on save.">Add new experience</h3>
       <p class="muted" style="font-size:13px;margin:0 0 10px">
         Describe a role in plain language — Claude will structure it into the right format when you save.
       </p>
