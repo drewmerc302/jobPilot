@@ -135,31 +135,79 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
             "<span class='error'>Profile not found — complete onboarding first</span>"
         )
 
+    form = await request.form()
+    adopt_edits = {
+        int(v) for v in form.getlist("edit_index") if str(v).isdigit()
+    } or None
+
     try:
         analysis = await asyncio.to_thread(
             ensure_analysis, job, profile, db, config, client=client
         )
         output_dir = config.output_dir / job_id
         result = await asyncio.to_thread(
-            run_tailor_for_job, job, analysis, profile, output_dir, config
+            run_tailor_for_job,
+            job,
+            analysis,
+            profile,
+            output_dir,
+            config,
+            adopt_edits=adopt_edits,
         )
         resume_url = None
         if result.get("resume_pdf"):
             rel = Path(result["resume_pdf"]).relative_to(config.output_dir)
             resume_url = f"/output/{rel}"
             db.update_match_paths(job_id, resume_path=resume_url)
-        return templates.TemplateResponse(
-            request,
-            "_partials/tailor_result.html",
-            {
-                "job_id": job_id,
-                "result": {**result, "resume_pdf": resume_url},
-                "analysis": analysis,
-            },
+        if resume_url:
+            return HTMLResponse(
+                f'<a href="{resume_url}" target="_blank" rel="noopener" class="btn btn-success btn-sm">'
+                f"✓ Open tailored resume ↗</a>"
+            )
+        return HTMLResponse(
+            "<span class='error'>PDF generation failed — check logs.</span>"
         )
     except Exception as exc:
         logger.error(f"Tailor failed for {job_id}: {exc}")
         return HTMLResponse(f"<span class='error'>Tailor failed: {exc}</span>")
+
+
+@router.post("/matches/{job_id}/analyze", response_class=HTMLResponse)
+async def analyze_match(job_id: str, request: Request) -> HTMLResponse:
+    """Run LLM analysis on-demand; return analysis panels partial."""
+    db = request.app.state.db
+    config = request.app.state.config
+    client = request.app.state.client
+    templates = request.app.state.templates
+
+    if compute_ladder(config, db)["state"] == "gift_exhausted":
+        return HTMLResponse(
+            "<span class='error'>Starter credit used up. <a href='/settings'>Add your own key →</a></span>"
+        )
+
+    job = db.get_job(job_id)
+    if not job:
+        return HTMLResponse("<span class='error'>Job not found</span>")
+
+    profile = request.app.state.profile_store.load()
+    if not profile:
+        return HTMLResponse(
+            "<span class='error'>Profile not found — complete onboarding first</span>"
+        )
+
+    try:
+        suggestions = await asyncio.to_thread(
+            ensure_analysis, job, profile, db, config, client=client
+        )
+        ladder = compute_ladder(config, db)
+        return templates.TemplateResponse(
+            request,
+            "_partials/analysis_panels.html",
+            {"suggestions": suggestions, "job_id": job_id, "ladder": ladder},
+        )
+    except Exception as exc:
+        logger.error(f"Analysis failed for {job_id}: {exc}")
+        return HTMLResponse(f"<span class='error'>Analysis failed: {exc}</span>")
 
 
 @router.post("/matches/{job_id}/interview-prep", response_class=HTMLResponse)

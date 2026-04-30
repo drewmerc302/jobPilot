@@ -1,0 +1,65 @@
+{% if suggestions.key_requirements %}
+<div class="card suggestions-panel">
+  <h3>Key requirements</h3>
+  <ul>
+    {% for req in suggestions.key_requirements %}
+    <li>{{ req }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if suggestions.interview_talking_points %}
+<div class="card suggestions-panel">
+  <h3>Talking points</h3>
+  <ul>
+    {% for pt in suggestions.interview_talking_points %}
+    <li>{{ pt }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if suggestions.keyword_gaps %}
+<div class="card suggestions-panel">
+  <h3>Keyword gaps</h3>
+  <ul>
+    {% for gap in suggestions.keyword_gaps %}
+    <li>{{ gap }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if suggestions.suggested_edits %}
+<div class="card suggestions-panel">
+  <h3>Suggested resume edits</h3>
+  <p class="muted" style="font-size:12px;margin:0 0 12px">
+    Check edits to include in the tailored PDF. Bullets are always reordered by relevance.
+  </p>
+  <form hx-post="/matches/{{ job_id }}/tailor"
+        hx-target="#detail-tailor-slot"
+        hx-swap="innerHTML">
+    {% for edit in suggestions.suggested_edits %}
+    <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;font-size:13px;cursor:pointer">
+      <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:3px;flex-shrink:0" checked>
+      <div>
+        <div style="color:var(--muted);text-decoration:line-through">{{ edit.original }}</div>
+        <div style="color:var(--green)">{{ edit.suggested }}</div>
+        {% if edit.reason %}<div class="muted" style="font-size:11px">{{ edit.reason }}</div>{% endif %}
+      </div>
+    </label>
+    {% endfor %}
+    {% if ladder and ladder.state == "gift_exhausted" %}
+    <button type="button" class="btn btn-success btn-sm" disabled style="opacity:.45;cursor:not-allowed;margin-top:8px">
+      Generate tailored PDF (~$0.01)
+    </button>
+    {% else %}
+    <button type="submit" class="btn btn-success btn-sm" style="margin-top:8px">
+      <span class="htmx-indicator spinner"></span>
+      Generate tailored PDF (~$0.01)
+    </button>
+    {% endif %}
+  </form>
+</div>
+{% endif %}

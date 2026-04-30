@@ -35,10 +35,10 @@
     } else if (e.key === "Enter" && cur) {
       const jobId = cur.dataset.jobId;
       if (jobId) window.location = "/matches/" + jobId;
-    } else if (e.key === "t" || e.key === "T") {
+    } else if (e.key === "d" || e.key === "D") {
       if (cur) {
-        const btn = cur.querySelector(".tailor-btn");
-        if (btn) btn.click();
+        const jobId = cur.dataset.jobId;
+        if (jobId) window.location = "/matches/" + jobId;
       }
     } else if (e.key === "x" || e.key === "X") {
       if (cur) {

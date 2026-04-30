@@ -19,24 +19,10 @@
   </td>
   <td>
     <div style="display:flex;gap:6px;align-items:center">
-      <div class="tailor-slot">
-        {% if m.resume_path %}
-        <a href="{{ m.resume_path }}" class="btn btn-success btn-sm" download>PDF ↓</a>
-        {% elif ladder and ladder.state == "gift_exhausted" %}
-        <button class="btn btn-success btn-sm" disabled style="opacity:.45;cursor:not-allowed" title="Add your own key to tailor">
-          Tailor Your<br>Resume (T)
-        </button>
-        {% else %}
-        <button class="btn btn-success btn-sm tailor-btn"
-                hx-post="/matches/{{ m.job_id }}/tailor"
-                hx-target="closest .tailor-slot"
-                hx-swap="innerHTML"
-                title="Tailor resume for this job">
-          <span class="htmx-indicator spinner"></span>
-          Tailor Your<br>Resume (T)
-        </button>
-        {% endif %}
-      </div>
+      {% if m.resume_path %}
+      <a href="{{ m.resume_path }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">PDF ↗</a>
+      {% endif %}
+      <a href="/matches/{{ m.job_id }}" class="btn btn-outline btn-sm details-btn">Job Details (D)</a>
       <button class="btn btn-outline btn-sm dismiss-btn"
               hx-post="/matches/{{ m.job_id }}/dismiss"
               hx-target="closest tr"

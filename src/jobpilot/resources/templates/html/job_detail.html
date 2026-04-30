@@ -23,50 +23,38 @@
     {# Left: description + actions #}
     <div>
       <div class="card" style="padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+
         {# Status selector #}
         {% with job_id=job.id, status=(application.status if application else 'new') %}
         {% include "_partials/status_badge.html" %}
         {% endwith %}
 
-        {# Tailor button #}
-        <div class="tailor-slot">
+        {# Tailored resume link — populated by Generate PDF button #}
+        <div id="detail-tailor-slot">
           {% if match and match.resume_path %}
           <a href="{{ match.resume_path }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
             ✓ Open tailored resume ↗
           </a>
-          {% elif ladder and ladder.state == "gift_exhausted" %}
-          <button class="btn btn-success btn-sm" disabled style="opacity:.45;cursor:not-allowed" title="Add your own key to tailor">
-            Tailor resume (~$0.03)
-          </button>
-          {% else %}
-          <button class="btn btn-success btn-sm tailor-btn"
-                  hx-post="/matches/{{ job.id }}/tailor"
-                  hx-target="closest .tailor-slot"
-                  hx-swap="innerHTML">
-            <span class="htmx-indicator spinner"></span>
-            Tailor resume (~$0.03)
-          </button>
           {% endif %}
         </div>
 
         {# Interview prep #}
         {% if ladder and ladder.state == "gift_exhausted" %}
-        <button class="btn btn-outline btn-sm" disabled style="opacity:.45;cursor:not-allowed" title="Add your own key to generate prep">
-          {% if prep_result %}↻ Regenerate prep (~$0.03){% else %}Interview prep (~$0.03){% endif %}
+        <button class="btn btn-outline btn-sm" disabled style="opacity:.45;cursor:not-allowed">
+          {% if prep_result %}↻ Regenerate prep{% else %}Interview prep{% endif %} (~$0.03)
         </button>
         {% else %}
         <button class="btn btn-outline btn-sm"
                 hx-post="/matches/{{ job.id }}/interview-prep"
                 hx-target="#prep-section"
-                hx-swap="innerHTML"
-                hx-indicator="#prep-spinner">
-          <span id="prep-spinner" class="htmx-indicator spinner"></span>
-          {% if prep_result %}↻ Regenerate prep (~$0.03){% else %}Interview prep (~$0.03){% endif %}
+                hx-swap="innerHTML">
+          <span class="htmx-indicator spinner"></span>
+          {% if prep_result %}↻ Regenerate prep{% else %}Interview prep{% endif %} (~$0.03)
         </button>
         {% endif %}
 
         <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
-          View posting ↗
+          View posting (O) ↗
         </a>
       </div>
 
@@ -76,7 +64,7 @@
       </div>
     </div>
 
-    {# Right: suggestions panel #}
+    {# Right: analysis panels #}
     <div>
       {% if match and match.match_reason %}
       <div class="card suggestions-panel">
@@ -85,52 +73,30 @@
       </div>
       {% endif %}
 
-      {% if suggestions.key_requirements %}
-      <div class="card suggestions-panel">
-        <h3>Key requirements</h3>
-        <ul>
-          {% for req in suggestions.key_requirements %}
-          <li>{{ req }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-
-      {% if suggestions.interview_talking_points %}
-      <div class="card suggestions-panel">
-        <h3>Talking points</h3>
-        <ul>
-          {% for pt in suggestions.interview_talking_points %}
-          <li>{{ pt }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-
-      {% if suggestions.keyword_gaps %}
-      <div class="card suggestions-panel">
-        <h3>Keyword gaps</h3>
-        <ul>
-          {% for gap in suggestions.keyword_gaps %}
-          <li>{{ gap }}</li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-
-      {% if suggestions.suggested_edits %}
-      <div class="card suggestions-panel">
-        <h3>Suggested resume edits</h3>
-        <p class="muted" style="font-size:12px;margin:0 0 8px">Your PDF has reordered bullets for this role. These additional edits are suggested — consider applying them to your base resume.</p>
-        {% for edit in suggestions.suggested_edits %}
-        <div style="margin-bottom:12px;font-size:13px">
-          <div style="color:var(--muted);text-decoration:line-through;margin-bottom:2px">{{ edit.original }}</div>
-          <div style="color:var(--green)">{{ edit.suggested }}</div>
-          {% if edit.reason %}<div class="muted" style="font-size:11px;margin-top:2px">{{ edit.reason }}</div>{% endif %}
+      <div id="analysis-panels">
+        {% if suggestions and (suggestions.get('key_requirements') or suggestions.get('suggested_edits') or suggestions.get('keyword_gaps') or suggestions.get('interview_talking_points')) %}
+        {% include "_partials/analysis_panels.html" %}
+        {% else %}
+        {% if ladder and ladder.state == "gift_exhausted" %}
+        <div class="card suggestions-panel">
+          <p class="muted" style="font-size:14px;margin:0">Add your own API key to analyze this role.</p>
         </div>
-        {% endfor %}
+        {% else %}
+        <div class="card suggestions-panel" style="text-align:center;padding:28px 20px">
+          <p class="muted" style="font-size:14px;margin:0 0 14px">
+            Get keyword gaps, suggested edits, and interview talking points tailored to this role.
+          </p>
+          <button class="btn btn-primary btn-sm"
+                  hx-post="/matches/{{ job.id }}/analyze"
+                  hx-target="#analysis-panels"
+                  hx-swap="innerHTML">
+            <span class="htmx-indicator spinner"></span>
+            Analyze for this role (~$0.03)
+          </button>
+        </div>
+        {% endif %}
+        {% endif %}
       </div>
-      {% endif %}
 
       {% if application and application.notes %}
       <div class="card suggestions-panel">
