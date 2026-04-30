@@ -6,7 +6,11 @@
   <h1 style="margin:0 0 4px;font-size:22px">Settings</h1>
   <p class="muted" style="margin:0 0 28px">API key and spending limits</p>
 
-  {% if key_exhausted %}
+  {% if missing_adzuna %}
+  <div class="alert alert-error" style="margin-bottom:20px">
+    Adzuna API credentials are not configured. Add <code>ADZUNA_APP_ID</code> and <code>ADZUNA_APP_KEY</code> to <code>~/.jobpilot/.env</code> to enable job search.
+  </div>
+  {% elif key_exhausted %}
   <div class="alert alert-error" style="margin-bottom:20px">
     Your starter credit is used up. <strong>Your data is safe</strong> — add your own Anthropic API key below to resume tailoring, refreshing, and interview prep.
   </div>
@@ -39,7 +43,9 @@
                 hx-post="/api/test-key"
                 hx-include="#api_key"
                 hx-target="#test-key-result"
-                hx-swap="innerHTML">
+                hx-swap="innerHTML"
+                hx-indicator="#test-key-spinner">
+          <span id="test-key-spinner" class="htmx-indicator spinner"></span>
           Test key
         </button>
       </div>

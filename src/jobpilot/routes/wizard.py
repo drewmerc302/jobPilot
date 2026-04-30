@@ -9,6 +9,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from jobpilot.ladder import compute_ladder
 from jobpilot.pipeline import run_pipeline
 from jobpilot.scrapers.adzuna import AdzunaScraper
+from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
+from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.search_params import SearchParams
 from jobpilot.steps.discover_companies import discover_companies
 from jobpilot.steps.extract_resume import extract_resume
@@ -268,7 +270,7 @@ async def step4_get(request: Request) -> HTMLResponse:
     config = request.app.state.config
     if compute_ladder(config, db)["state"] == "gift_exhausted":
         return RedirectResponse("/settings?key_exhausted=1", status_code=303)
-    if db.count_runs_today() >= 4:
+    if db.count_runs_today() >= config.max_runs_per_day:
         return RedirectResponse("/matches?refresh_capped=1", status_code=303)
     client = request.app.state.client
     run_status = request.app.state.run_status
@@ -276,7 +278,7 @@ async def step4_get(request: Request) -> HTMLResponse:
     run_id = db.start_run()
     run_status[run_id] = {"stage": "starting", "result": None, "error": None}
 
-    scrapers = [AdzunaScraper(sp)]
+    scrapers = _build_scrapers(sp)
 
     def update_stage(stage: str) -> None:
         run_status[run_id]["stage"] = stage
@@ -311,6 +313,15 @@ async def step4_get(request: Request) -> HTMLResponse:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _build_scrapers(sp) -> list:
+    scrapers: list = [JobSpyScraper(sp)]
+    if JooblesScraper.is_configured():
+        scrapers.append(JooblesScraper(sp))
+    if AdzunaScraper.is_configured():
+        scrapers.append(AdzunaScraper(sp))
+    return scrapers
 
 
 def _flatten_skills(skills: dict | list) -> list[str]:

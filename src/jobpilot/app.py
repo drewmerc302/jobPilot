@@ -15,10 +15,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import anthropic
+import pystray
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from PIL import Image, ImageDraw
 
 from jobpilot.config import Config
 from jobpilot.db import Database
@@ -41,11 +43,13 @@ async def lifespan(app: FastAPI):
     config.data_dir.mkdir(parents=True, exist_ok=True)
     config.output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Make Adzuna keys available to AdzunaScraper (reads from os.environ)
+    # Propagate scraper credentials to os.environ for scrapers that read from it
     if config.adzuna_app_id:
         os.environ["ADZUNA_APP_ID"] = config.adzuna_app_id
     if config.adzuna_app_key:
         os.environ["ADZUNA_APP_KEY"] = config.adzuna_app_key
+    if config.jooble_api_key:
+        os.environ["JOOBLE_API_KEY"] = config.jooble_api_key
 
     db = Database(config.db_path)
 
@@ -152,18 +156,37 @@ def _serve(app: FastAPI) -> None:
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
 
 
+def _build_tray_image() -> Image.Image:
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([4, 4, 60, 60], fill="#0d6efd")
+    return img
+
+
 def main() -> None:
     if _port_in_use(PORT):
-        # Another instance is already running — just focus the browser.
         webbrowser.open(f"http://127.0.0.1:{PORT}/")
         return
 
-    app = create_app()
-    threading.Thread(target=_serve, args=(app,), daemon=True).start()
+    fastapi_app = create_app()
+    threading.Thread(target=_serve, args=(fastapi_app,), daemon=True).start()
     time.sleep(0.8)
     webbrowser.open(f"http://127.0.0.1:{PORT}/")
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        pass
+
+    def _open(_icon, _item):
+        webbrowser.open(f"http://127.0.0.1:{PORT}/")
+
+    def _quit(icon, _item):
+        icon.stop()
+
+    tray = pystray.Icon(
+        "jobPilot",
+        _build_tray_image(),
+        "jobPilot",
+        menu=pystray.Menu(
+            pystray.MenuItem("Open jobPilot", _open, default=True),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Quit", _quit),
+        ),
+    )
+    tray.run()

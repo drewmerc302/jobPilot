@@ -27,6 +27,7 @@ async def settings_get(request: Request) -> HTMLResponse:
             "monthly_budget": config.monthly_budget,
             "saved": request.query_params.get("saved") == "1",
             "key_exhausted": request.query_params.get("key_exhausted") == "1",
+            "missing_adzuna": request.query_params.get("missing_adzuna") == "1",
         },
     )
 

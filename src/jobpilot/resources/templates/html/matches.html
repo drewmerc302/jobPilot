@@ -137,7 +137,9 @@
               hx-post="/search-params/preview"
               hx-include="#search-edit-form"
               hx-target="#diff-preview"
-              hx-swap="innerHTML">
+              hx-swap="innerHTML"
+              hx-indicator="#preview-spinner">
+        <span id="preview-spinner" class="htmx-indicator spinner"></span>
         Preview impact
       </button>
       <button type="button" class="btn btn-outline btn-sm"

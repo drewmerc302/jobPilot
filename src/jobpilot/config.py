@@ -5,9 +5,14 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# User data lives outside the bundle so it survives app updates.
+# Dev override: set JOBPILOT_DATA_DIR in your shell or a .env file.
+_USER_DATA_DIR = Path(os.getenv("JOBPILOT_DATA_DIR", Path.home() / ".jobpilot"))
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+# Load .env from the user data dir (lets advanced users drop a key file there)
+# then fall back to CWD-based search (useful in dev with a project-root .env).
+load_dotenv(_USER_DATA_DIR / ".env")
+load_dotenv()
 
 
 @dataclass
@@ -19,17 +24,21 @@ class Config:
     llm_tailor_model: str = "claude-sonnet-4-6"
     llm_extract_model: str = "claude-haiku-4-5-20251001"
     relevance_threshold: float = 0.6
-    data_dir: Path = field(default_factory=lambda: PROJECT_ROOT / "data")
-    db_path: Path = field(default_factory=lambda: PROJECT_ROOT / "data" / "jobpilot.db")
-    output_dir: Path = field(default_factory=lambda: PROJECT_ROOT / "output")
+    data_dir: Path = field(default_factory=lambda: _USER_DATA_DIR)
+    db_path: Path = field(default_factory=lambda: _USER_DATA_DIR / "jobpilot.db")
+    output_dir: Path = field(default_factory=lambda: _USER_DATA_DIR / "output")
     template_dir: Path = field(
         default_factory=lambda: Path(__file__).parent / "resources" / "templates"
     )
     adzuna_app_id: str = field(default_factory=lambda: os.getenv("ADZUNA_APP_ID", ""))
     adzuna_app_key: str = field(default_factory=lambda: os.getenv("ADZUNA_APP_KEY", ""))
+    jooble_api_key: str = field(default_factory=lambda: os.getenv("JOOBLE_API_KEY", ""))
     monthly_budget: float = 5.00
     total_budget: float = 10.00
     has_byo_key: bool = False
+    max_runs_per_day: int = field(
+        default_factory=lambda: int(os.getenv("JOBPILOT_MAX_RUNS_PER_DAY", "4"))
+    )
 
     def __post_init__(self):
         overrides_path = self.data_dir / "config_overrides.json"

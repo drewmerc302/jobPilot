@@ -34,8 +34,14 @@ class AdzunaScraper(BaseScraper):
 
     def __init__(self, search_params: SearchParams):
         self.search_params = search_params
-        self._app_id = os.environ["ADZUNA_APP_ID"]
-        self._app_key = os.environ["ADZUNA_APP_KEY"]
+        self._app_id = os.environ.get("ADZUNA_APP_ID", "")
+        self._app_key = os.environ.get("ADZUNA_APP_KEY", "")
+
+    @classmethod
+    def is_configured(cls) -> bool:
+        return bool(
+            os.environ.get("ADZUNA_APP_ID") and os.environ.get("ADZUNA_APP_KEY")
+        )
 
     def fetch_jobs(self) -> list[RawJob]:
         if not self.search_params.location:

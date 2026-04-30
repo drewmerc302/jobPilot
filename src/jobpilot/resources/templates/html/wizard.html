@@ -50,7 +50,7 @@
       </div>
       <div style="margin-top:16px;display:flex;align-items:center;gap:16px">
         <button type="submit" class="btn btn-primary" id="upload-btn" disabled>
-          <span class="htmx-indicator spinner"></span>
+          <span class="spinner" id="upload-spinner" style="display:none"></span>
           Extract resume
         </button>
         <span class="muted">Usually takes 10–20 seconds</span>
@@ -72,6 +72,10 @@
         selected.textContent = '✓ ' + this.files[0].name;
         btn.disabled = false;
       }
+    });
+    document.getElementById('upload-form').addEventListener('submit', function() {
+      document.getElementById('upload-spinner').style.display = 'inline-block';
+      btn.disabled = true;
     });
   </script>
 
