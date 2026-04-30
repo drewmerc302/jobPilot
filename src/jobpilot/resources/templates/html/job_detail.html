@@ -2,6 +2,14 @@
 {% block title %}{{ job.title }} at {{ job.company }} — jobPilot{% endblock %}
 
 {% block content %}
+{% set has_analysis = suggestions and (
+  suggestions.get('key_requirements') or
+  suggestions.get('keyword_gaps') or
+  suggestions.get('interview_talking_points') or
+  suggestions.get('suggested_edits') is not none
+) %}
+{% set can_act = not (ladder and ladder.state == "gift_exhausted") %}
+
 <div class="page">
   <div style="margin-bottom:16px">
     <a href="/matches" class="muted" style="font-size:14px">← Back to matches</a>
@@ -25,44 +33,80 @@
   </div>
 
   <div class="detail-grid">
-    {# Left: job info #}
+    {# ── Left: job info + all actions ── #}
     <div>
       <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">About This Role</h2>
 
-      <div class="card" style="padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="card" style="padding:16px 20px;margin-bottom:12px">
 
-        {# Status selector #}
-        {% with job_id=job.id, status=(application.status if application else 'new') %}
-        {% include "_partials/status_badge.html" %}
-        {% endwith %}
+        {# Row 1: status + generated PDF link #}
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          {% with job_id=job.id, status=(application.status if application else 'new') %}
+          {% include "_partials/status_badge.html" %}
+          {% endwith %}
 
-        {# Tailored resume link — populated by Generate PDF button in analysis panels #}
-        <div id="detail-tailor-slot">
-          {% if match and match.resume_path %}
-          <a href="{{ match.resume_path }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
-            ✓ Open tailored resume ↗
-          </a>
-          {% endif %}
+          <div id="detail-tailor-slot">
+            {% if match and match.resume_path %}
+            <a href="{{ match.resume_path }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
+              ✓ Open tailored resume ↗
+            </a>
+            {% endif %}
+          </div>
         </div>
 
-        {# Interview Q&A Guide — generates predicted questions, STAR stories, and gaps to address #}
-        {% if ladder and ladder.state == "gift_exhausted" %}
-        <button class="btn btn-outline btn-sm" disabled style="opacity:.45;cursor:not-allowed">
-          {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %} (~$0.03)
-        </button>
-        {% else %}
-        <button class="btn btn-outline btn-sm"
-                hx-post="/matches/{{ job.id }}/interview-prep"
-                hx-target="#prep-section"
-                hx-swap="innerHTML">
-          <span class="htmx-indicator spinner"></span>
-          {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %} (~$0.03)
-        </button>
-        {% endif %}
+        {# Row 2: all action buttons #}
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
 
-        <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
-          Full Job Listing (O) ↗
-        </a>
+          {# Analyze or Re-analyze — form POST so page reloads with fresh state #}
+          {% if can_act %}
+            {% if has_analysis %}
+            <form method="post" action="/matches/{{ job.id }}/analyze?force=1&redirect=1"
+                  style="display:inline"
+                  onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Re-analyzing…'">
+              <button type="submit" class="btn btn-outline btn-sm">↻ Re-analyze (~$0.03)</button>
+            </form>
+            {% else %}
+            <form method="post" action="/matches/{{ job.id }}/analyze?redirect=1"
+                  style="display:inline"
+                  onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Analyzing…'">
+              <button type="submit" class="btn btn-primary btn-sm">Analyze for this role (~$0.03)</button>
+            </form>
+            {% endif %}
+          {% endif %}
+
+          {# Generate Tailored Resume — opens modal #}
+          {% if has_analysis %}
+            {% if can_act %}
+            <button type="button" class="btn btn-primary btn-sm"
+                    onclick="document.getElementById('tailor-modal').showModal()">
+              Generate Tailored Resume
+            </button>
+            {% else %}
+            <button type="button" class="btn btn-primary btn-sm" disabled style="opacity:.45;cursor:not-allowed">
+              Generate Tailored Resume
+            </button>
+            {% endif %}
+          {% endif %}
+
+          {# Interview Q&A Guide #}
+          {% if can_act %}
+          <button class="btn btn-outline btn-sm"
+                  hx-post="/matches/{{ job.id }}/interview-prep"
+                  hx-target="#prep-section"
+                  hx-swap="innerHTML">
+            <span class="htmx-indicator spinner"></span>
+            {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %} (~$0.03)
+          </button>
+          {% else %}
+          <button class="btn btn-outline btn-sm" disabled style="opacity:.45;cursor:not-allowed">
+            {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %} (~$0.03)
+          </button>
+          {% endif %}
+
+          <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+            Full Job Listing (O) ↗
+          </a>
+        </div>
       </div>
 
       <div class="card">
@@ -74,7 +118,7 @@
       </div>
     </div>
 
-    {# Right: match analysis #}
+    {# ── Right: match analysis (informational only) ── #}
     <div>
       <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">Your Match Analysis</h2>
 
@@ -86,27 +130,18 @@
       {% endif %}
 
       <div id="analysis-panels">
-        {% if suggestions and (suggestions.get('key_requirements') or suggestions.get('suggested_edits') or suggestions.get('keyword_gaps') or suggestions.get('interview_talking_points')) %}
+        {% if has_analysis %}
         {% include "_partials/analysis_panels.html" %}
+        {% elif can_act %}
+        <div class="card suggestions-panel" style="padding:20px">
+          <p class="muted" style="font-size:14px;margin:0">
+            Click <strong>Analyze for this role</strong> to get keyword gaps, suggested edits, and talking points.
+          </p>
+        </div>
         {% else %}
-        {% if ladder and ladder.state == "gift_exhausted" %}
         <div class="card suggestions-panel">
           <p class="muted" style="font-size:14px;margin:0">Add your own API key to analyze this role.</p>
         </div>
-        {% else %}
-        <div class="card suggestions-panel" style="text-align:center;padding:28px 20px">
-          <p class="muted" style="font-size:14px;margin:0 0 14px">
-            Get keyword gaps, suggested edits, and resume talking points tailored to this role.
-          </p>
-          <button class="btn btn-primary btn-sm"
-                  hx-post="/matches/{{ job.id }}/analyze"
-                  hx-target="#analysis-panels"
-                  hx-swap="innerHTML">
-            <span class="htmx-indicator spinner"></span>
-            Analyze for this role (~$0.03)
-          </button>
-        </div>
-        {% endif %}
         {% endif %}
       </div>
 
@@ -123,4 +158,58 @@
     {% include "_partials/interview_prep_result.html" %}
   </div>
 </div>
+
+{# ── Tailored Resume Modal ── #}
+{% if has_analysis and can_act %}
+<dialog id="tailor-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;max-width:560px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15)">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+    <h3 style="margin:0;font-size:16px;font-weight:700">Generate Tailored Resume</h3>
+    <button onclick="document.getElementById('tailor-modal').close()"
+            style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">×</button>
+  </div>
+  <form hx-post="/matches/{{ job.id }}/tailor"
+        hx-target="#detail-tailor-slot"
+        hx-swap="innerHTML"
+        hx-on::after-request="document.getElementById('tailor-modal').close()"
+        style="padding:20px;max-height:65vh;overflow-y:auto">
+    {% if suggestions.suggested_edits %}
+    <p class="muted" style="font-size:12px;margin:0 0 14px">
+      Check the edits to include. Bullets are always reordered by relevance.
+    </p>
+    {% for edit in suggestions.suggested_edits %}
+    <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;font-size:13px;cursor:pointer">
+      <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:3px;flex-shrink:0" checked>
+      <div>
+        <div style="color:var(--muted);text-decoration:line-through">{{ edit.original }}</div>
+        <div style="color:var(--green)">{{ edit.suggested }}</div>
+        {% if edit.reason %}<div class="muted" style="font-size:11px">{{ edit.reason }}</div>{% endif %}
+      </div>
+    </label>
+    {% endfor %}
+    {% else %}
+    <p class="muted" style="font-size:14px;margin:0 0 16px">
+      No specific edits suggested — your resume is a strong match.
+      Generating will reorder your bullets for maximum relevance.
+    </p>
+    {% endif %}
+    <div style="display:flex;gap:8px;padding-top:4px">
+      <button type="submit" class="btn btn-success btn-sm">
+        <span class="htmx-indicator spinner"></span>
+        Generate PDF (~$0.01)
+      </button>
+      <button type="button" class="btn btn-outline btn-sm"
+              onclick="document.getElementById('tailor-modal').close()">
+        Cancel
+      </button>
+    </div>
+  </form>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById("tailor-modal");
+  if (dlg) dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+})();
+</script>
+{% endif %}
+
 {% endblock %}

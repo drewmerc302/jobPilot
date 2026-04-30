@@ -208,6 +208,8 @@ async def analyze_match(job_id: str, request: Request) -> HTMLResponse:
         suggestions = await asyncio.to_thread(
             ensure_analysis, job, profile, db, config, client=client, force=force
         )
+        if request.query_params.get("redirect") == "1":
+            return RedirectResponse(f"/matches/{job_id}", status_code=303)
         ladder = compute_ladder(config, db)
         return templates.TemplateResponse(
             request,
@@ -216,6 +218,8 @@ async def analyze_match(job_id: str, request: Request) -> HTMLResponse:
         )
     except Exception as exc:
         logger.error(f"Analysis failed for {job_id}: {exc}")
+        if request.query_params.get("redirect") == "1":
+            return RedirectResponse(f"/matches/{job_id}", status_code=303)
         return HTMLResponse(f"<span class='error'>Analysis failed: {exc}</span>")
 
 

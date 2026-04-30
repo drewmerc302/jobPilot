@@ -1,16 +1,3 @@
-{% if ladder and ladder.state != "gift_exhausted" %}
-<div style="text-align:right;margin-bottom:8px">
-  <button class="btn btn-outline btn-sm"
-          style="font-size:11px"
-          hx-post="/matches/{{ job_id }}/analyze?force=1"
-          hx-target="#analysis-panels"
-          hx-swap="innerHTML">
-    <span class="htmx-indicator spinner"></span>
-    ↻ Re-analyze (~$0.03)
-  </button>
-</div>
-{% endif %}
-
 {% if suggestions.key_requirements %}
 <div class="card suggestions-panel">
   <h3>Key requirements</h3>
@@ -43,41 +30,3 @@
   </ul>
 </div>
 {% endif %}
-
-<div class="card suggestions-panel">
-  <h3>Generate tailored resume</h3>
-  <form hx-post="/matches/{{ job_id }}/tailor"
-        hx-target="#detail-tailor-slot"
-        hx-swap="innerHTML">
-    {% if suggestions.suggested_edits %}
-    <p class="muted" style="font-size:12px;margin:0 0 12px">
-      Check edits to include in the tailored PDF. Bullets are always reordered by relevance.
-    </p>
-    {% for edit in suggestions.suggested_edits %}
-    <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;font-size:13px;cursor:pointer">
-      <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:3px;flex-shrink:0" checked>
-      <div>
-        <div style="color:var(--muted);text-decoration:line-through">{{ edit.original }}</div>
-        <div style="color:var(--green)">{{ edit.suggested }}</div>
-        {% if edit.reason %}<div class="muted" style="font-size:11px">{{ edit.reason }}</div>{% endif %}
-      </div>
-    </label>
-    {% endfor %}
-    {% else %}
-    <p class="muted" style="font-size:13px;margin:0 0 12px">
-      No specific edits suggested — your resume already matches this role well.
-      Generating will reorder your bullets for maximum relevance.
-    </p>
-    {% endif %}
-    {% if ladder and ladder.state == "gift_exhausted" %}
-    <button type="button" class="btn btn-success btn-sm" disabled style="opacity:.45;cursor:not-allowed;margin-top:4px">
-      Generate tailored PDF (~$0.01)
-    </button>
-    {% else %}
-    <button type="submit" class="btn btn-success btn-sm" style="margin-top:4px">
-      <span class="htmx-indicator spinner"></span>
-      Generate tailored PDF (~$0.01)
-    </button>
-    {% endif %}
-  </form>
-</div>
