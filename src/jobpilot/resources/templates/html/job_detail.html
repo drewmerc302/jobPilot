@@ -300,8 +300,8 @@
     <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       {% if needs_analysis %}
       <button type="submit" form="analyze-form" class="btn btn-primary btn-sm"
-              onclick="this.disabled=true;this.textContent='Analyzing…'">
-        Analyze this role
+              onclick="this.disabled=true;this.querySelector('.spin-icon').style.display='inline-block';this.querySelector('.btn-label').textContent='Analyzing…'">
+        <span class="spin-icon" style="display:none;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px"></span><span class="btn-label">Analyze this role</span>
       </button>
       <span class="muted" style="font-size:11px">~$0.03 via Claude</span>
       {% else %}
