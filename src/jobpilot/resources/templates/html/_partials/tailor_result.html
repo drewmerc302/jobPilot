@@ -1,13 +1,11 @@
 {% if result and result.resume_pdf %}
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-  <a href="{{ result.resume_pdf }}" class="btn btn-success btn-sm" download>
-    ✓ Download tailored resume
+<div style="display:flex;flex-direction:column;gap:6px">
+  <a href="{{ result.resume_pdf }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
+    ✓ Open tailored resume ↗
   </a>
-  {% if analysis and analysis.keyword_gaps %}
-  <span class="muted" style="font-size:12px">
-    Gaps: {{ analysis.keyword_gaps[:3] | join(", ") }}{% if analysis.keyword_gaps|length > 3 %} +{{ analysis.keyword_gaps|length - 3 }}{% endif %}
-  </span>
-  {% endif %}
+  <a href="/matches/{{ job_id }}" style="font-size:12px;color:var(--blue)">
+    View edits &amp; analysis →
+  </a>
 </div>
 {% else %}
 <span class="error">Tailor failed — Typst binary may be missing.</span>

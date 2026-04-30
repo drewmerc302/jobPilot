@@ -1,7 +1,9 @@
 <tr class="match-row" data-job-id="{{ m.job_id }}">
   <td>
-    <div class="match-company">{{ m.company }}</div>
-    <div class="match-title">{{ m.title }}</div>
+    <a href="/matches/{{ m.job_id }}" style="text-decoration:none;color:inherit">
+      <div class="match-company">{{ m.company }}</div>
+      <div class="match-title" style="color:var(--blue)">{{ m.title }}</div>
+    </a>
   </td>
   <td class="muted" style="font-size:13px;white-space:nowrap">{{ m.location or '—' }}</td>
   <td>

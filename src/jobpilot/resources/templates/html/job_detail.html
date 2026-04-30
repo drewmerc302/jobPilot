@@ -29,18 +29,21 @@
         {% endwith %}
 
         {# Tailor button #}
-        <div id="tailor-slot-{{ job.id }}">
-          {% if ladder and ladder.state == "gift_exhausted" %}
+        <div class="tailor-slot">
+          {% if match and match.resume_path %}
+          <a href="{{ match.resume_path }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
+            ✓ Open tailored resume ↗
+          </a>
+          {% elif ladder and ladder.state == "gift_exhausted" %}
           <button class="btn btn-success btn-sm" disabled style="opacity:.45;cursor:not-allowed" title="Add your own key to tailor">
             Tailor resume (~$0.03)
           </button>
           {% else %}
           <button class="btn btn-success btn-sm tailor-btn"
                   hx-post="/matches/{{ job.id }}/tailor"
-                  hx-target="#tailor-slot-{{ job.id }}"
-                  hx-swap="innerHTML"
-                  hx-indicator="#tailor-spinner-{{ job.id }}">
-            <span id="tailor-spinner-{{ job.id }}" class="htmx-indicator spinner"></span>
+                  hx-target="closest .tailor-slot"
+                  hx-swap="innerHTML">
+            <span class="htmx-indicator spinner"></span>
             Tailor resume (~$0.03)
           </button>
           {% endif %}
@@ -112,6 +115,20 @@
           <li>{{ gap }}</li>
           {% endfor %}
         </ul>
+      </div>
+      {% endif %}
+
+      {% if suggestions.suggested_edits %}
+      <div class="card suggestions-panel">
+        <h3>Suggested resume edits</h3>
+        <p class="muted" style="font-size:12px;margin:0 0 8px">Your PDF has reordered bullets for this role. These additional edits are suggested — consider applying them to your base resume.</p>
+        {% for edit in suggestions.suggested_edits %}
+        <div style="margin-bottom:12px;font-size:13px">
+          <div style="color:var(--muted);text-decoration:line-through;margin-bottom:2px">{{ edit.original }}</div>
+          <div style="color:var(--green)">{{ edit.suggested }}</div>
+          {% if edit.reason %}<div class="muted" style="font-size:11px;margin-top:2px">{{ edit.reason }}</div>{% endif %}
+        </div>
+        {% endfor %}
       </div>
       {% endif %}
 
