@@ -1,8 +1,8 @@
-<div id="status-slot-{{ job_id }}">
+<div class="status-slot">
   <select class="badge badge-{{ status }}"
           style="border:none;cursor:pointer;padding:2px 6px;font-size:12px;width:100%"
           hx-post="/matches/{{ job_id }}/status"
-          hx-target="#status-slot-{{ job_id }}"
+          hx-target="closest .status-slot"
           hx-swap="outerHTML"
           name="status">
     {% for s in ["new","interested","applied","interviewing","offer","rejected","withdrawn"] %}

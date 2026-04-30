@@ -136,9 +136,13 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
         )
 
     try:
-        analysis = ensure_analysis(job, profile, db, config, client=client)
+        analysis = await asyncio.to_thread(
+            ensure_analysis, job, profile, db, config, client=client
+        )
         output_dir = config.output_dir / job_id
-        result = run_tailor_for_job(job, analysis, profile, output_dir, config)
+        result = await asyncio.to_thread(
+            run_tailor_for_job, job, analysis, profile, output_dir, config
+        )
         if result.get("resume_pdf"):
             db.update_match_paths(job_id, resume_path=str(result["resume_pdf"]))
         return templates.TemplateResponse(
