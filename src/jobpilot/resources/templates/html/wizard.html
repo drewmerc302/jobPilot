@@ -189,7 +189,7 @@
           <label for="seniority">Seniority filter</label>
           <select id="seniority" name="seniority">
             <option value="">Any level</option>
-            {% for s in ["Junior", "Mid", "Senior", "Staff", "Principal", "Lead", "Manager", "Director"] %}
+            {% for s in ["Junior", "Mid", "Senior", "Lead", "Staff", "Principal", "Manager", "Director"] %}
             <option value="{{ s }}" {% if sp and sp.seniority == s %}selected{% endif %}>{{ s }}</option>
             {% endfor %}
           </select>

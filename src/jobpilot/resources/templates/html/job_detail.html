@@ -211,8 +211,8 @@
 
 {# ── Tailored Resume Modal ── #}
 {% if has_analysis and can_act %}
-<dialog id="tailor-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;max-width:min(1120px,96vw);width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15)">
-  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+<dialog id="tailor-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;max-width:min(1120px,96vw);width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15);display:flex;flex-direction:column;max-height:90vh">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
     <h3 style="margin:0;font-size:16px;font-weight:700">Generate Tailored Resume</h3>
     <button onclick="document.getElementById('tailor-modal').close()"
             style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">×</button>
@@ -220,57 +220,59 @@
   <form hx-post="/matches/{{ job.id }}/tailor"
         hx-target="#detail-tailor-slot"
         hx-swap="innerHTML"
-        style="padding:20px;max-height:65vh;overflow-y:auto">
-    {% if suggestions.suggested_edits %}
-    <p class="muted" style="font-size:12px;margin:0 0 10px">
-      Check the edits to include. Bullets are always reordered by relevance.
-    </p>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button type="button" class="btn btn-outline btn-sm"
-              onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=true})">
-        Select all
-      </button>
-      <button type="button" class="btn btn-outline btn-sm"
-              onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=false})">
-        Deselect all
-      </button>
-    </div>
-    {% for edit in suggestions.suggested_edits %}
-    <div style="margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
-      <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
-        <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:4px;flex-shrink:0" checked>
-        <div style="flex:1;font-size:13px">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Current</div>
-          <div style="color:var(--muted);text-decoration:line-through;margin-bottom:8px">{{ edit.original }}</div>
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:2px">Suggested</div>
-          <div style="color:var(--green){% if edit.reason %};margin-bottom:8px{% endif %}">{{ edit.suggested }}</div>
-          {% if edit.reason %}
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Rationale</div>
-          <div class="muted" style="font-size:11px">{{ edit.reason }}</div>
-          {% endif %}
-        </div>
-      </label>
-    </div>
-    {% endfor %}
-    {% else %}
-    <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
-      <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edit suggestions found</p>
-      <p class="muted" style="margin:0 0 14px;font-size:13px">
-        This usually means we only have a short snippet of the job description.
-        It may also mean your resume is already a strong match for this role.
-        Paste the full description for targeted suggestions.
+        style="display:flex;flex-direction:column;flex:1;min-height:0">
+    <div style="padding:20px;overflow-y:auto;flex:1">
+      {% if suggestions.suggested_edits %}
+      <p class="muted" style="font-size:12px;margin:0 0 10px">
+        Check the edits to include. Bullets are always reordered by relevance.
       </p>
-      <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:inline-flex;margin-bottom:10px">
-        Open Full Listing ↗
-      </a>
-      <button type="button" class="btn btn-primary btn-sm" style="width:100%"
-              onclick="document.getElementById('tailor-modal').close(); document.getElementById('description-modal').showModal()">
-        Paste Full Description to Get Suggestions
-      </button>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button type="button" class="btn btn-outline btn-sm"
+                onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=true})">
+          Select all
+        </button>
+        <button type="button" class="btn btn-outline btn-sm"
+                onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=false})">
+          Deselect all
+        </button>
+      </div>
+      {% for edit in suggestions.suggested_edits %}
+      <div style="margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+        <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+          <input type="checkbox" name="edit_index" value="{{ loop.index }}" style="margin-top:4px;flex-shrink:0" checked>
+          <div style="flex:1;font-size:13px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Current</div>
+            <div style="color:var(--muted);text-decoration:line-through;margin-bottom:8px">{{ edit.original }}</div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin-bottom:2px">Suggested</div>
+            <div style="color:var(--green){% if edit.reason %};margin-bottom:8px{% endif %}">{{ edit.suggested }}</div>
+            {% if edit.reason %}
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px">Rationale</div>
+            <div class="muted" style="font-size:11px">{{ edit.reason }}</div>
+            {% endif %}
+          </div>
+        </label>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+        <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edit suggestions found</p>
+        <p class="muted" style="margin:0 0 14px;font-size:13px">
+          This usually means we only have a short snippet of the job description.
+          It may also mean your resume is already a strong match for this role.
+          Paste the full description for targeted suggestions.
+        </p>
+        <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:inline-flex;margin-bottom:10px">
+          Open Full Listing ↗
+        </a>
+        <button type="button" class="btn btn-primary btn-sm" style="width:100%"
+                onclick="document.getElementById('tailor-modal').close(); document.getElementById('description-modal').showModal()">
+          Paste Full Description to Get Suggestions
+        </button>
+      </div>
+      <p class="muted" style="font-size:12px;margin:0 0 4px;text-align:center">— or generate anyway: bullets reordered by relevance, no text changes —</p>
+      {% endif %}
     </div>
-    <p class="muted" style="font-size:12px;margin:0 0 14px;text-align:center">— or generate anyway: bullets reordered by relevance, no text changes —</p>
-    {% endif %}
-    <div style="display:flex;gap:8px;padding-top:4px;align-items:flex-start">
+    <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:flex-start">
       <div>
         <button type="submit" class="btn btn-success btn-sm">
           <span class="htmx-indicator spinner"></span>
