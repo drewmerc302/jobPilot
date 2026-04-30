@@ -1,3 +1,16 @@
+{% if ladder and ladder.state != "gift_exhausted" %}
+<div style="text-align:right;margin-bottom:8px">
+  <button class="btn btn-outline btn-sm"
+          style="font-size:11px"
+          hx-post="/matches/{{ job_id }}/analyze?force=1"
+          hx-target="#analysis-panels"
+          hx-swap="innerHTML">
+    <span class="htmx-indicator spinner"></span>
+    ↻ Re-analyze (~$0.03)
+  </button>
+</div>
+{% endif %}
+
 {% if suggestions.key_requirements %}
 <div class="card suggestions-panel">
   <h3>Key requirements</h3>

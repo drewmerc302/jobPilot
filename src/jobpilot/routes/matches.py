@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
+from jobpilot.fetch_description import fetch_full_description, is_snippet
 from jobpilot.ladder import compute_ladder
 from jobpilot.steps.interview_prep import generate_interview_prep
 from jobpilot.steps.tailor import ensure_analysis, run_tailor_for_job
@@ -196,8 +197,16 @@ async def analyze_match(job_id: str, request: Request) -> HTMLResponse:
         )
 
     try:
+        force = request.query_params.get("force") == "1"
+        if is_snippet(job.get("description")):
+            full_desc = await asyncio.to_thread(fetch_full_description, job["url"])
+            if full_desc:
+                db.update_job_description(job_id, full_desc)
+                job = {**job, "description": full_desc}
+                force = True
+
         suggestions = await asyncio.to_thread(
-            ensure_analysis, job, profile, db, config, client=client
+            ensure_analysis, job, profile, db, config, client=client, force=force
         )
         ladder = compute_ladder(config, db)
         return templates.TemplateResponse(

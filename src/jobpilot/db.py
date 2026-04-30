@@ -152,6 +152,13 @@ class Database:
     def commit(self):
         self._conn.commit()
 
+    def update_job_description(self, job_id: str, description: str) -> None:
+        self._conn.execute(
+            "UPDATE jobs SET description = ? WHERE id = ?",
+            (description, job_id),
+        )
+        self._conn.commit()
+
     def get_job(self, job_id: str) -> dict | None:
         row = self._conn.execute(
             "SELECT * FROM jobs WHERE id = ?", (job_id,)
