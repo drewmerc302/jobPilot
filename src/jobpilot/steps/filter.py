@@ -189,7 +189,7 @@ def run_filter(
         logger.info("No jobs passed keyword filter")
         return []
     if client is None:
-        client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+        client = anthropic.Anthropic(api_key=config.anthropic_api_key, timeout=90)
     matches = []
     for job in candidates:
         try:

@@ -100,7 +100,7 @@ async def test_key(api_key: str = Form(...)) -> HTMLResponse:
     if not key:
         return HTMLResponse("<span class='error'>Enter a key to test.</span>")
     try:
-        client = anthropic.Anthropic(api_key=key)
+        client = anthropic.Anthropic(api_key=key, timeout=10)
         client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=1,

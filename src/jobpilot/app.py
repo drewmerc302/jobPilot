@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
 
     app.state.config = config
     app.state.db = db
-    app.state.client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+    app.state.client = anthropic.Anthropic(api_key=config.anthropic_api_key, timeout=90)
     app.state.profile_store = ProfileStore(config.data_dir)
     app.state.search_params_store = SearchParamsStore(config.data_dir)
     app.state.templates = Jinja2Templates(directory=str(TEMPLATES_DIR))

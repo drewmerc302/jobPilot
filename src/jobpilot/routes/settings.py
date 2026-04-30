@@ -53,6 +53,6 @@ async def settings_post(
     if api_key.strip():
         config.anthropic_api_key = api_key.strip()
         config.has_byo_key = True
-        request.app.state.client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+        request.app.state.client = anthropic.Anthropic(api_key=config.anthropic_api_key, timeout=90)
 
     return RedirectResponse("/settings?saved=1", status_code=303)

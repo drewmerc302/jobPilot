@@ -266,9 +266,10 @@
       {# State: full description available but not yet analyzed (or stale analysis) #}
       <div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:var(--radius);padding:16px">
         <p style="margin:0 0 6px;font-size:14px;font-weight:600">Analyze this role first</p>
-        <p class="muted" style="margin:0;font-size:13px">
+        <p class="muted" style="margin:0 0 8px;font-size:13px">
           jobPilot will compare the job description against your resume, suggest specific edits, and identify keyword gaps. You'll review the suggestions before generating your PDF.
         </p>
+        <p class="muted" style="margin:0;font-size:11px">~$0.03 via Claude · takes 20–40 seconds</p>
       </div>
       {% elif has_analysis and not suggestions.suggested_edits and has_full_description %}
       {# State: fresh analysis confirmed no edits needed — strong match #}
@@ -300,10 +301,9 @@
     <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       {% if needs_analysis %}
       <button type="submit" form="analyze-form" class="btn btn-primary btn-sm"
-              onclick="this.disabled=true;this.querySelector('.spin-icon').style.display='inline-block';this.querySelector('.btn-label').textContent='Analyzing…'">
+              onclick="this.disabled=true;this.querySelector('.spin-icon').style.display='inline-block';this.querySelector('.btn-label').textContent='Analyzing… (20–40 sec)'">
         <span class="spin-icon" style="display:none;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px"></span><span class="btn-label">Analyze this role</span>
       </button>
-      <span class="muted" style="font-size:11px">~$0.03 via Claude</span>
       {% else %}
       <button type="submit" class="btn btn-success btn-sm">
         <span class="htmx-indicator spinner"></span>

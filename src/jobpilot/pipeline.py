@@ -60,7 +60,7 @@ def run_pipeline(
     run_id is optional; created internally if not provided.
     """
     if client is None:
-        client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+        client = anthropic.Anthropic(api_key=config.anthropic_api_key, timeout=90)
 
     start_time = time.time()
     if run_id is None:

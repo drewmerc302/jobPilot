@@ -133,7 +133,7 @@ def llm_resume_analysis(
     job_id: str | None = None,
 ) -> dict:
     if client is None:
-        client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+        client = anthropic.Anthropic(api_key=config.anthropic_api_key, timeout=90)
     kwargs = dict(
         model=config.llm_tailor_model,
         max_tokens=4096,
