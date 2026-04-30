@@ -64,20 +64,37 @@ The app opens in your browser at `http://127.0.0.1:8765`. On first launch, a set
 ### Job matching
 Jobs are scored against your resume on relevance, seniority fit, and keyword overlap. The matches list shows score, company, title, salary, and location at a glance.
 
+### Job detail analysis
+Every job detail page shows an AI breakdown of the role against your profile: why it fits, the key requirements extracted from the description, and interview talking points specific to your background.
+
 ### Resume tailoring
-Open any job and click **Generate Tailored Resume**. Claude analyzes the job description against your profile and returns:
-- Key requirements and how well you match each
-- Suggested resume edits specific to this role
-- A gap analysis — skills or experience worth addressing in a cover letter
+Click **Generate Tailored Resume** on any job. Claude produces a diff of your resume bullets — current vs. suggested rewrites with a rationale for each change. Check the edits you want to apply, then click **Generate PDF** to produce a tailored resume ready to send. Your stored profile is unchanged.
+
+### Interview Q&A Guide
+One click generates a set of likely interview questions for the role with suggested answers drawn from your specific experience. Available on every job detail page (~$0.03).
 
 ### Resume editor
-The **Resume** page (`/profile`) lets you edit your stored resume data directly:
-- Update contact info, summary, skills, and structured experience
-- AI summary rewrite: describe your recent accomplishments, get a polished 2–5 sentence summary
-- Add new experience in plain language — Claude structures it into the correct format on save
+The **Resume** page lets you edit your stored profile directly — the data that drives all matching and tailoring:
+- Add new experience in plain language at the top; Claude structures it automatically on save
+- Edit contact info, summary, skills, and structured work history
+- AI summary rewrite: describe your recent accomplishments, get a polished 2–5 sentence draft
 
 ### Application tracking
-Track application status per job. The status dropdown on each job detail page moves a listing through your pipeline.
+Track each role through your pipeline via the status dropdown on the job detail page (New → Applied → Interviewing → Offer → Rejected).
+
+### Contextual tooltips
+Hover over any button, column header, or form label to get a plain-language explanation of what it does and what it costs.
+
+## Documentation
+
+A full annotated user guide is available at [`docs/user_guide/`](docs/user_guide/). Build the PDF locally:
+
+```bash
+cd docs/user_guide
+typst compile user_guide.typ user_guide.pdf
+```
+
+Requires [Typst](https://typst.app). The source references screenshots from `screenshots/` (gitignored — see [`SHOT_LIST.md`](docs/user_guide/SHOT_LIST.md) for what to capture).
 
 ## Packaging
 
@@ -96,8 +113,9 @@ briefcase run macOS
 All AI features use your Anthropic API key and are billed to your account. Rough estimates:
 - Resume extraction (one-time): ~$0.05
 - Match scoring per run: ~$0.01–0.03 depending on result count
-- Tailor analysis per job: ~$0.05–0.10
-- Summary rewrite: ~$0.03
+- Tailor analysis + resume PDF per job: ~$0.03
+- Interview Q&A Guide per job: ~$0.03
+- AI summary rewrite: ~$0.03
 - New experience parse: ~$0.01
 
 A cost meter in the nav bar shows your running total.
