@@ -33,9 +33,16 @@
 {% else %}
 <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px">
   <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edits suggested</p>
-  <p class="muted" style="margin:0;font-size:13px">
-    Your resume is already a strong match for this role. Generating the PDF will reorder your bullets by relevance — no text changes.
+  <p class="muted" style="margin:0 0 12px;font-size:13px">
+    No text changes were suggested. Your resume may already be a strong match, or you can re-analyze to double-check.
   </p>
+  <button type="button" class="btn btn-outline btn-sm"
+          hx-post="/matches/{{ job.id }}/tailor-analyze"
+          hx-target="#tailor-modal-content"
+          hx-swap="innerHTML"
+          onclick="this.disabled=true;this.querySelector('.spin-icon').style.display='inline-block';this.querySelector('.btn-label').textContent='Analyzing… (20–40 sec)'">
+    <span class="spin-icon" style="display:none;width:12px;height:12px;border:2px solid #aaa;border-top-color:#555;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px"></span><span class="btn-label">↻ Re-analyze</span>
+  </button>
 </div>
 {% endif %}
 </div>
