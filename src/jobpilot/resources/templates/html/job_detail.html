@@ -15,13 +15,20 @@
       {{ job.company }}
       {% if job.location %} · {{ job.location }}{% endif %}
       {% if job.salary %} · {{ job.salary }}{% endif %}
-      {% if job.remote %} · <span class="badge badge-interested">Remote</span>{% endif %}
+      {% if job.remote %} · <span class="badge badge-interested">Remote-friendly</span>{% endif %}
     </p>
+    {% if not job.remote %}
+    <p style="margin:6px 0 0;font-size:12px;color:#856404;background:#fff3cd;padding:3px 10px;border-radius:4px;display:inline-block;border:1px solid #ffe08a">
+      Remote status not specified — verify in full listing
+    </p>
+    {% endif %}
   </div>
 
   <div class="detail-grid">
-    {# Left: description + actions #}
+    {# Left: job info #}
     <div>
+      <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">About This Role</h2>
+
       <div class="card" style="padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
 
         {# Status selector #}
@@ -29,7 +36,7 @@
         {% include "_partials/status_badge.html" %}
         {% endwith %}
 
-        {# Tailored resume link — populated by Generate PDF button #}
+        {# Tailored resume link — populated by Generate PDF button in analysis panels #}
         <div id="detail-tailor-slot">
           {% if match and match.resume_path %}
           <a href="{{ match.resume_path }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
@@ -38,10 +45,10 @@
           {% endif %}
         </div>
 
-        {# Interview prep #}
+        {# Interview Q&A Guide — generates predicted questions, STAR stories, and gaps to address #}
         {% if ladder and ladder.state == "gift_exhausted" %}
         <button class="btn btn-outline btn-sm" disabled style="opacity:.45;cursor:not-allowed">
-          {% if prep_result %}↻ Regenerate prep{% else %}Interview prep{% endif %} (~$0.03)
+          {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %} (~$0.03)
         </button>
         {% else %}
         <button class="btn btn-outline btn-sm"
@@ -49,23 +56,28 @@
                 hx-target="#prep-section"
                 hx-swap="innerHTML">
           <span class="htmx-indicator spinner"></span>
-          {% if prep_result %}↻ Regenerate prep{% else %}Interview prep{% endif %} (~$0.03)
+          {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %} (~$0.03)
         </button>
         {% endif %}
 
         <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
-          View posting (O) ↗
+          Full Job Listing (O) ↗
         </a>
       </div>
 
       <div class="card">
-        <h3 style="margin:0 0 12px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Description</h3>
-        <div class="detail-description">{{ (job.description or '') | clean_html or 'No description available.' }}</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+          <h3 style="margin:0;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Description</h3>
+          <span style="font-size:11px;color:var(--muted)">(summary — <a href="{{ job.url }}" target="_blank" rel="noopener">full listing ↗</a> for complete details)</span>
+        </div>
+        <div class="detail-description" style="margin-top:12px">{{ (job.description or '') | clean_html or 'No description available.' }}</div>
       </div>
     </div>
 
-    {# Right: analysis panels #}
+    {# Right: match analysis #}
     <div>
+      <h2 style="margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">Your Match Analysis</h2>
+
       {% if match and match.match_reason %}
       <div class="card suggestions-panel">
         <h3>Why it fits</h3>
@@ -84,7 +96,7 @@
         {% else %}
         <div class="card suggestions-panel" style="text-align:center;padding:28px 20px">
           <p class="muted" style="font-size:14px;margin:0 0 14px">
-            Get keyword gaps, suggested edits, and interview talking points tailored to this role.
+            Get keyword gaps, suggested edits, and resume talking points tailored to this role.
           </p>
           <button class="btn btn-primary btn-sm"
                   hx-post="/matches/{{ job.id }}/analyze"
