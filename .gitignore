@@ -68,6 +68,10 @@ uv.lock
 # Runtime data (SQLite DB, config overrides)
 data/
 
+# Compiled docs
+docs/user_guide/user_guide.pdf
+docs/user_guide/screenshots/
+
 # Briefcase log files
 logs/
 
