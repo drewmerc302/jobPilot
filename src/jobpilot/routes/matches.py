@@ -437,8 +437,13 @@ async def add_job(
             "<span class='error'>Invalid URL — must be http/https and not a private address.</span>",
             status_code=400,
         )
+    db = request.app.state.db
+    config = request.app.state.config
+    client = request.app.state.client
+    clean_description = description.strip() or None
+
     job_id = _manual_job_id(url)
-    request.app.state.db.add_manual_job(
+    db.add_manual_job(
         job_id=job_id,
         url=url,
         title=title.strip(),
@@ -446,8 +451,24 @@ async def add_job(
         location=location.strip() or None,
         salary=salary.strip() or None,
         remote=remote == "on",
-        description=description.strip() or None,
+        description=clean_description,
     )
+
+    # Auto-analyze when description provided and budget allows
+    if clean_description and compute_ladder(config, db)["state"] != "gift_exhausted":
+        profile = request.app.state.profile_store.load()
+        if profile:
+            job = db.get_job(job_id)
+            try:
+                await asyncio.to_thread(
+                    ensure_analysis, job, profile, db, config, client=client, force=True
+                )
+                return RedirectResponse(
+                    f"/matches/{job_id}?open_tailor=1", status_code=303
+                )
+            except Exception as exc:
+                logger.error(f"Analysis failed for manually added job {job_id}: {exc}")
+
     return RedirectResponse(f"/matches/{job_id}", status_code=303)
 
 
