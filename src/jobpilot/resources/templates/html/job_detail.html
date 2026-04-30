@@ -196,7 +196,8 @@
     <form method="post" action="/matches/{{ job.id }}/description-and-analyze"
           onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.innerHTML='<span style=&quot;display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px&quot;></span>Saving &amp; analyzing…'">
       <textarea name="description" rows="12"
-                style="width:100%;font-size:12px;resize:vertical;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;margin-bottom:10px">{{ (job.description or '') | clean_html }}</textarea>
+                placeholder="Paste the full job description here…"
+                style="width:100%;font-size:12px;resize:vertical;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;margin-bottom:10px"></textarea>
       <button type="submit" class="btn btn-primary btn-sm" style="width:100%">
         Save &amp; analyze
       </button>
