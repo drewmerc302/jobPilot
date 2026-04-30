@@ -43,6 +43,7 @@ a:hover { text-decoration: underline; }
   z-index: 100;
 }
 .nav-brand { font-weight: 700; font-size: 18px; color: var(--blue); }
+.nav a[aria-current="page"] { color: var(--blue); font-weight: 600; border-bottom: 2px solid var(--blue); padding-bottom: 2px; }
 .nav-spacer { flex: 1; }
 .cost-meter {
   font-size: 13px;
