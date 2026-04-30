@@ -307,7 +307,6 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
     adopt_edits = {
         int(v) for v in form.getlist("edit_index") if str(v).isdigit()
     } or None
-    force_analysis = form.get("force") == "1"
 
     try:
         analysis = await asyncio.to_thread(
@@ -317,7 +316,6 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
             db,
             config,
             client=client,
-            force=force_analysis,
         )
         output_dir = config.output_dir / job_id
         result = await asyncio.to_thread(
@@ -383,7 +381,12 @@ async def analyze_match(job_id: str, request: Request) -> HTMLResponse:
             ensure_analysis, job, profile, db, config, client=client, force=force
         )
         if request.query_params.get("redirect") == "1":
-            return RedirectResponse(f"/matches/{job_id}", status_code=303)
+            suffix = (
+                "?open_tailor=1&fresh=1"
+                if request.query_params.get("open_tailor") == "1"
+                else ""
+            )
+            return RedirectResponse(f"/matches/{job_id}{suffix}", status_code=303)
         ladder = compute_ladder(config, db)
         return templates.TemplateResponse(
             request,

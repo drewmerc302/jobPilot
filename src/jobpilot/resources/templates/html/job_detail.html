@@ -9,6 +9,10 @@
   suggestions.get('suggested_edits') is not none
 ) %}
 {% set can_act = not (ladder and ladder.state == "gift_exhausted") %}
+{% set fresh = request.query_params.get('fresh') == '1' %}
+{% set needs_analysis = can_act and has_full_description and (
+  not has_analysis or (has_analysis and not suggestions.suggested_edits and not fresh)
+) %}
 
 <div class="page">
   <div style="margin-bottom:16px">
@@ -227,6 +231,7 @@
         style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div style="padding:20px;overflow-y:auto;flex:1">
       {% if suggestions.suggested_edits %}
+      {# State: has suggestions — user reviews and selects edits #}
       <p class="muted" style="font-size:12px;margin:0 0 10px">
         Check the edits to include. Bullets are always reordered by relevance.
       </p>
@@ -257,25 +262,24 @@
         </label>
       </div>
       {% endfor %}
-      {% elif not has_analysis %}
-      <div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:var(--radius);padding:16px;margin-bottom:16px">
-        <p style="margin:0 0 6px;font-size:14px;font-weight:600">Ready to tailor</p>
-        <p class="muted" style="margin:0 0 6px;font-size:13px">
-          Full description is available. Click Generate PDF to analyze this role and create your tailored resume in one step.
+      {% elif needs_analysis %}
+      {# State: full description available but not yet analyzed (or stale analysis) #}
+      <div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:var(--radius);padding:16px">
+        <p style="margin:0 0 6px;font-size:14px;font-weight:600">Analyze this role first</p>
+        <p class="muted" style="margin:0;font-size:13px">
+          jobPilot will compare the job description against your resume, suggest specific edits, and identify keyword gaps. You'll review the suggestions before generating your PDF.
         </p>
-        <p class="muted" style="font-size:11px;margin:0">~$0.03 via Claude</p>
+      </div>
+      {% elif has_analysis and not suggestions.suggested_edits and has_full_description %}
+      {# State: fresh analysis confirmed no edits needed — strong match #}
+      <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+        <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edits suggested</p>
+        <p class="muted" style="margin:0;font-size:13px">
+          Your resume is already a strong match for this role. Generating the PDF will reorder your bullets by relevance — no text changes.
+        </p>
       </div>
       {% else %}
-      {% if has_full_description %}
-      <input type="hidden" name="force" value="1">
-      <div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:var(--radius);padding:16px;margin-bottom:16px">
-        <p style="margin:0 0 6px;font-size:14px;font-weight:600">Ready to tailor</p>
-        <p class="muted" style="margin:0 0 6px;font-size:13px">
-          Full description is available. Click Generate PDF to analyze this role and create your tailored resume in one step.
-        </p>
-        <p class="muted" style="font-size:11px;margin:0">~$0.03 via Claude</p>
-      </div>
-      {% else %}
+      {# State: has analysis, no suggestions, snippet only — prompt to paste full description #}
       <div style="background:#f8f9fa;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
         <p style="margin:0 0 6px;font-size:14px;font-weight:600">No edit suggestions found</p>
         <p class="muted" style="margin:0 0 14px;font-size:13px">
@@ -292,13 +296,20 @@
       </div>
       <p class="muted" style="font-size:12px;margin:0 0 4px;text-align:center">— or generate anyway: bullets reordered by relevance, no text changes —</p>
       {% endif %}
-      {% endif %}
     </div>
-    <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:flex-start">
+    <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      {% if needs_analysis %}
+      <button type="submit" form="analyze-form" class="btn btn-primary btn-sm"
+              onclick="this.disabled=true;this.textContent='Analyzing…'">
+        Analyze this role
+      </button>
+      <span class="muted" style="font-size:11px">~$0.03 via Claude</span>
+      {% else %}
       <button type="submit" class="btn btn-success btn-sm">
         <span class="htmx-indicator spinner"></span>
         Generate PDF
       </button>
+      {% endif %}
       <button type="button" class="btn btn-outline btn-sm"
               onclick="document.getElementById('tailor-modal').close()">
         Cancel
@@ -306,6 +317,10 @@
     </div>
   </form>
 </dialog>
+{% if needs_analysis %}
+<form id="analyze-form" method="post"
+      action="/matches/{{ job.id }}/analyze?redirect=1&force=1&open_tailor=1"></form>
+{% endif %}
 <script>
 (function () {
   var dlg = document.getElementById("tailor-modal");
@@ -320,7 +335,7 @@
 </script>
 {% endif %}
 
-{% if has_analysis and can_act and request.query_params.get('open_tailor') == '1' %}
+{% if (has_analysis or has_full_description) and can_act and request.query_params.get('open_tailor') == '1' %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var dlg = document.getElementById('tailor-modal');
