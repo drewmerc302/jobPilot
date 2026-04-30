@@ -13,6 +13,8 @@
       {% if saved %}
       <span style="color:var(--green);font-size:13px;font-weight:600">✓ Saved</span>
       {% endif %}
+      <a href="/profile/generate-pdf" target="_blank" class="btn btn-outline btn-sm"
+         data-tooltip="Generates a PDF from your saved profile data — save changes first.">↓ Download PDF</a>
       <button form="profile-form" type="submit" class="btn btn-primary btn-sm">Save changes</button>
     </div>
   </div>
@@ -196,6 +198,8 @@
       {% if saved %}
       <span style="color:var(--green);font-size:13px;font-weight:600;align-self:center">✓ Saved</span>
       {% endif %}
+      <a href="/profile/generate-pdf" target="_blank" class="btn btn-outline"
+         data-tooltip="Generates a PDF from your saved profile data — save changes first.">↓ Download PDF</a>
       <button type="submit" class="btn btn-primary">Save changes</button>
     </div>
 

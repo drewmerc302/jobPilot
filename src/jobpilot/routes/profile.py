@@ -6,7 +6,7 @@ import logging
 
 import anthropic
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 import jobpilot.llm as llm
 from jobpilot.config import Config
@@ -312,3 +312,31 @@ async def suggest_summary(request: Request) -> HTMLResponse:
   </button>
 </div>
 """)
+
+
+@router.get("/profile/generate-pdf")
+async def profile_generate_pdf(request: Request):
+    from jobpilot.steps.tailor import generate_resume_pdf
+
+    profile = request.app.state.profile_store.load() or {}
+    if not profile:
+        return HTMLResponse("No profile found. Complete setup first.", status_code=400)
+
+    output_dir = request.app.state.config.output_dir / "base_resume"
+    pdf_path = await asyncio.to_thread(
+        generate_resume_pdf,
+        profile,
+        output_dir,
+        request.app.state.config,
+    )
+
+    if not pdf_path or not pdf_path.exists():
+        return HTMLResponse(
+            "PDF generation failed — Typst binary may be missing.", status_code=500
+        )
+
+    return FileResponse(
+        pdf_path,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'inline; filename="resume.pdf"'},
+    )
