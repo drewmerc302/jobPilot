@@ -46,7 +46,7 @@ class JobSpyScraper(BaseScraper):
                     location=sp.location,
                     distance=sp.radius_miles,
                     results_wanted=50,
-                    hours_old=72,
+                    hours_old=336,
                     verbose=0,
                 )
                 results.extend(self._df_to_raw(df))
@@ -61,7 +61,7 @@ class JobSpyScraper(BaseScraper):
                     search_term=keyword_str + " remote",
                     is_remote=True,
                     results_wanted=30,
-                    hours_old=72,
+                    hours_old=336,
                     verbose=0,
                 )
                 results.extend(self._df_to_raw(df, force_remote=True))
