@@ -206,6 +206,9 @@ async def job_detail(job_id: str, request: Request) -> HTMLResponse:
             "job_id": job["id"],
             "status": application["status"] if application else "new",
             "ladder": ladder,
+            "has_full_description": not is_snippet(
+                job.get("description"), job.get("source")
+            ),
         },
     )
 
@@ -362,7 +365,7 @@ async def analyze_match(job_id: str, request: Request) -> HTMLResponse:
 
     try:
         force = request.query_params.get("force") == "1"
-        if is_snippet(job.get("description")):
+        if is_snippet(job.get("description"), job.get("source")):
             full_desc = await asyncio.to_thread(fetch_full_description, job["url"])
             if full_desc:
                 db.update_job_description(job_id, full_desc)
