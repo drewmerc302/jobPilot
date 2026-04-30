@@ -277,13 +277,10 @@
       {% endif %}
     </div>
     <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:flex-start">
-      <div>
-        <button type="submit" class="btn btn-success btn-sm">
-          <span class="htmx-indicator spinner"></span>
-          Generate PDF
-        </button>
-        <p class="muted" style="font-size:11px;margin:3px 0 0">~$0.01 via Claude</p>
-      </div>
+      <button type="submit" class="btn btn-success btn-sm">
+        <span class="htmx-indicator spinner"></span>
+        Generate PDF
+      </button>
       <button type="button" class="btn btn-outline btn-sm"
               onclick="document.getElementById('tailor-modal').close()">
         Cancel
