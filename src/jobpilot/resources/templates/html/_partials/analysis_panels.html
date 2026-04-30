@@ -1,3 +1,14 @@
+{% if suggestions.keyword_gaps %}
+<div class="card suggestions-panel">
+  <h3>Keyword gaps</h3>
+  <ul>
+    {% for gap in suggestions.keyword_gaps %}
+    <li>{{ gap }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
 {% if suggestions.key_requirements %}
 <div class="card suggestions-panel">
   <h3>Key requirements</h3>
@@ -11,21 +22,10 @@
 
 {% if suggestions.interview_talking_points %}
 <div class="card suggestions-panel">
-  <h3>Talking points</h3>
+  <h3>Interview talking points</h3>
   <ul>
     {% for pt in suggestions.interview_talking_points %}
     <li>{{ pt }}</li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
-
-{% if suggestions.keyword_gaps %}
-<div class="card suggestions-panel">
-  <h3>Keyword gaps</h3>
-  <ul>
-    {% for gap in suggestions.keyword_gaps %}
-    <li>{{ gap }}</li>
     {% endfor %}
   </ul>
 </div>
