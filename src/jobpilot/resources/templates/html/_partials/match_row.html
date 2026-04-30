@@ -6,6 +6,7 @@
     </a>
   </td>
   <td class="muted" style="font-size:13px;white-space:normal;max-width:200px;word-break:break-word">{{ m.location or '—' }}</td>
+  <td class="muted" style="font-size:13px;white-space:nowrap">{{ m.salary or '' }}</td>
   <td>
     {% if m.source == 'manual' %}
     <span class="match-score" style="color:var(--muted);font-weight:400">—</span>
