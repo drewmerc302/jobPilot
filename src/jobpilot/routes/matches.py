@@ -378,7 +378,7 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
         resume_url = None
         if result.get("resume_pdf"):
             rel = Path(result["resume_pdf"]).relative_to(config.output_dir)
-            resume_url = f"/output/{rel}"
+            resume_url = f"/output/{rel.as_posix()}"
             db.update_match_paths(job_id, resume_path=resume_url)
         if resume_url:
             return HTMLResponse(

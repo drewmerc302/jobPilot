@@ -257,7 +257,7 @@ def generate_resume_pdf(
                 "--input",
                 f"resume={yaml_path}",
                 "--root",
-                "/",
+                str(template_path.parent),
             ],
             check=True,
             capture_output=True,

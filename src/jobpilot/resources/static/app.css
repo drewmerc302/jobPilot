@@ -93,7 +93,7 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   transition: border-color .15s;
 }
-.drop-zone:hover, .drop-zone.dragover { border-color: var(--blue); }
+.drop-zone:hover, .drop-zone.dragover, .drop-zone.drag-over { border-color: var(--blue); background: #f0f7ff; }
 .drop-zone input[type=file] { display: none; }
 
 /* ── Forms ───────────────────────────────────────────────── */
