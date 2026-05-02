@@ -1,0 +1,11 @@
+{
+  "planPath": "docs/superpowers/plans/2026-05-02-bullet-quality-scorer.md",
+  "tasks": [
+    {"id": 1, "subject": "Task 1: bullet_scorer.py — pure functions + LLM tools", "status": "completed"},
+    {"id": 2, "subject": "Task 2: Score-bullets endpoint + render helper + profile_save fix", "status": "completed", "blockedBy": [1]},
+    {"id": 3, "subject": "Task 3: improve-bullet + rewrite-bullet HTMX endpoints", "status": "completed", "blockedBy": [2]},
+    {"id": 4, "subject": "Task 4: UI — Analyze button + analysis panel in profile_edit.html", "status": "completed", "blockedBy": [3]},
+    {"id": 5, "subject": "Task 5: Auto-trigger scoring after wizard upload", "status": "completed", "blockedBy": [4]}
+  ],
+  "lastUpdated": "2026-05-02T03:00:00Z"
+}
