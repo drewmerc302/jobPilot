@@ -259,7 +259,13 @@ textarea { resize: vertical; min-height: 80px; }
   z-index: 200;
 }
 [data-tooltip]:hover::after,
-[data-tooltip]:hover::before { opacity: 1; }
+[data-tooltip]:hover::before,
+[data-tooltip]:focus::after,
+[data-tooltip]:focus::before,
+[data-tooltip]:focus-within::after,
+[data-tooltip]:focus-within::before,
+[data-tooltip]:active::after,
+[data-tooltip]:active::before { opacity: 1; }
 [data-tooltip][data-tip-pos="bottom"]::after {
   top: calc(100% + 8px);
   bottom: auto;

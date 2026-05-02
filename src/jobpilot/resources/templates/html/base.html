@@ -35,25 +35,23 @@
 
   <div id="toast-container"></div>
 
-  <div id="shortcuts-overlay" class="hidden" style="
-    position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;
-    display:flex;align-items:center;justify-content:center;">
-    <div class="card" style="min-width:320px;max-width:400px">
+  <dialog id="shortcuts-overlay" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;background:transparent;max-width:none">
+    <div class="card" style="min-width:320px;max-width:400px;padding:24px">
       <h3 style="margin:0 0 16px">Keyboard shortcuts</h3>
       <table style="width:100%;border-collapse:collapse;font-size:14px">
         <tr><td><kbd>j</kbd> / <kbd>↓</kbd></td><td>Next job</td></tr>
         <tr><td><kbd>k</kbd> / <kbd>↑</kbd></td><td>Previous job</td></tr>
-        <tr><td><kbd>Enter</kbd> / <kbd>D</kbd></td><td>Open job details</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Open job details</td></tr>
         <tr><td><kbd>X</kbd></td><td>Dismiss match</td></tr>
         <tr><td><kbd>?</kbd></td><td>Toggle this overlay</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Close / deselect</td></tr>
       </table>
-      <button class="btn btn-outline btn-sm" style="margin-top:16px"
-              onclick="document.getElementById('shortcuts-overlay').classList.add('hidden')">
+      <button type="button" class="btn btn-outline btn-sm" style="margin-top:16px"
+              onclick="document.getElementById('shortcuts-overlay').close()">
         Close
       </button>
     </div>
-  </div>
+  </dialog>
 
   <script src="/static/app.js"></script>
 </body>

@@ -634,7 +634,7 @@ class Database:
             ).fetchone()["cnt"]
             or 0
         )
-        return {"jobs_reviewed": jobs, "tailored": tailored, "applications": applied}
+        return {"jobs_scanned": jobs, "tailored": tailored, "applications": applied}
 
     def close(self) -> None:
         self._conn.close()

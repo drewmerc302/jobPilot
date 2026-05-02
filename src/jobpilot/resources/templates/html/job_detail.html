@@ -36,7 +36,7 @@
     {% endif %}
     <div style="margin-top:10px">
       <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
-        Full Job Listing ↗
+        Open original listing ↗
       </a>
     </div>
   </div>
@@ -108,7 +108,7 @@
                   onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Re-analyzing…'">
               <div>
                 <button type="submit" class="btn btn-outline btn-sm" style="width:100%" data-tooltip="Re-run the analysis — useful after updating your resume or if the job posting changed.">↻ Re-analyze</button>
-                <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 via Claude</p>
+                <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 in AI usage</p>
               </div>
             </form>
             {% else %}
@@ -117,7 +117,7 @@
                   onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Analyzing…'">
               <div>
                 <button type="submit" class="btn btn-primary btn-sm" style="width:100%" data-tooltip="Surface key requirements, resume gaps, and interview angles for this specific role.">Analyze for this role</button>
-                <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 via Claude</p>
+                <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 in AI usage</p>
               </div>
             </form>
             {% endif %}
@@ -162,7 +162,7 @@
               <span class="htmx-indicator spinner"></span>
               {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %}
             </button>
-            <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 via Claude</p>
+            <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 in AI usage</p>
           </div>
           {% else %}
           <button class="btn btn-outline btn-sm" style="width:100%" disabled style="opacity:.45;cursor:not-allowed">
@@ -176,7 +176,7 @@
       <div class="card">
         <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;flex-wrap:wrap">
           <h3 style="margin:0;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Job Description</h3>
-          <a href="{{ job.url }}" target="_blank" rel="noopener" class="muted" style="font-size:11px">Full listing ↗</a>
+          <a href="{{ job.url }}" target="_blank" rel="noopener" class="muted" style="font-size:11px">Open original listing ↗</a>
         </div>
         <div class="detail-description" style="margin-top:12px">{{ (job.description or '') | clean_html or 'No description available.' }}</div>
       </div>
@@ -202,7 +202,7 @@
       We only have a short snippet for this role. Paste the full description below so we can tailor your resume accurately.
     </p>
     <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:inline-flex;margin-bottom:16px">
-      Open Full Listing ↗
+      Open original listing ↗
     </a>
     <form method="post" action="/matches/{{ job.id }}/description-and-analyze"
           onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.innerHTML='<span style=&quot;display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px&quot;></span>Saving &amp; analyzing…'">
@@ -212,7 +212,7 @@
       <button type="submit" class="btn btn-primary btn-sm" style="width:100%">
         Save &amp; analyze
       </button>
-      <p class="muted" style="font-size:11px;margin:4px 0 0;text-align:center">~$0.03 via Claude</p>
+      <p class="muted" style="font-size:11px;margin:4px 0 0;text-align:center">~$0.03 in AI usage</p>
     </form>
   </div>
 </dialog>
@@ -243,7 +243,7 @@
       <div style="padding:40px 20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
         <div style="width:24px;height:24px;border:3px solid #ccc;border-top-color:#555;border-radius:50%;animation:spin .7s linear infinite"></div>
         <p style="margin:0;color:var(--muted);font-size:14px">Analyzing resume against this role…</p>
-        <p style="margin:0;color:var(--muted);font-size:12px">~$0.03 via Claude · 20–40 seconds</p>
+        <p style="margin:0;color:var(--muted);font-size:12px">~$0.03 in AI usage · 20–40 seconds</p>
       </div>
       <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center">
         <button type="button" class="btn btn-outline btn-sm"
@@ -310,7 +310,7 @@
             Paste the full description for targeted suggestions.
           </p>
           <a href="{{ job.url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="display:inline-flex;margin-bottom:10px">
-            Open Full Listing ↗
+            Open original listing ↗
           </a>
           <button type="button" class="btn btn-primary btn-sm" style="width:100%"
                   onclick="document.getElementById('tailor-modal').close(); document.getElementById('description-modal').showModal()">

@@ -35,11 +35,6 @@
     } else if (e.key === "Enter" && cur) {
       const jobId = cur.dataset.jobId;
       if (jobId) window.location = "/matches/" + jobId;
-    } else if (e.key === "d" || e.key === "D") {
-      if (cur) {
-        const jobId = cur.dataset.jobId;
-        if (jobId) window.location = "/matches/" + jobId;
-      }
     } else if (e.key === "x" || e.key === "X") {
       if (cur) {
         const btn = cur.querySelector(".dismiss-btn");
@@ -47,9 +42,15 @@
       }
     } else if (e.key === "Escape") {
       focusRow(null);
-      document.querySelector("#shortcuts-overlay")?.classList.add("hidden");
+      const dlg = document.getElementById("shortcuts-overlay");
+      if (dlg && dlg.open) dlg.close();
     } else if (e.key === "?") {
-      document.querySelector("#shortcuts-overlay")?.classList.toggle("hidden");
+      const dlg = document.getElementById("shortcuts-overlay");
+      if (dlg) {
+        if (dlg.open) dlg.close();
+        else if (typeof dlg.showModal === "function") dlg.showModal();
+        else dlg.setAttribute("open", "");
+      }
     }
   });
 

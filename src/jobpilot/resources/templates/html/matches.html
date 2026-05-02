@@ -89,7 +89,7 @@
   <div style="margin-bottom:12px;text-align:right">
     <button type="button" class="btn btn-primary btn-sm"
             onclick="document.getElementById('add-job-modal').showModal()"
-            data-tooltip="Add a job you found elsewhere — scored and analyzed the same as scraped listings." data-tip-pos="bottom">+ Add your own job listing</button>
+            data-tooltip="Add a job you found elsewhere — scored and analyzed the same as scraped listings." data-tip-pos="bottom">+ Add a job from another site</button>
   </div>
 
   {% if not matches %}
@@ -164,7 +164,7 @@
       </div>
     </div>
     <div class="form-row">
-      <label for="se-anchors">Anchor companies (one per line)</label>
+      <label for="se-anchors">Target companies (one per line)</label>
       <textarea id="se-anchors" name="anchor_companies" rows="4">{{ sp.anchor_companies|join('\n') }}</textarea>
     </div>
 
