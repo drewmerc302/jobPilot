@@ -33,22 +33,55 @@ def _slugify(name: str) -> str:
     return re.sub(r"-+", "-", slug)
 
 
+class GreenhouseProbeError(Exception):
+    """Server-side issue (5xx, timeout, connection) — distinct from a 404."""
+
+
 def probe_greenhouse(company_name: str) -> "GreenhouseScraper | None":
     """Try the slugified company name against the Greenhouse API.
 
-    Returns a GreenhouseScraper if the board exists, None otherwise.
-    Fails silently — absence means the company isn't on Greenhouse or uses
-    a non-standard slug.
+    Returns a GreenhouseScraper if the board exists, None for the
+    expected "no such board" 404 case (silent OK). Raises
+    GreenhouseProbeError when Greenhouse itself is misbehaving (5xx
+    or network) so callers can surface a "Greenhouse temporarily
+    down — N target companies skipped" message.
     """
     slug = _slugify(company_name)
     url = f"{GREENHOUSE_API}/{slug}/jobs"
     try:
         resp = httpx.get(url, timeout=5, headers={"User-Agent": "jobPilot/1.0"})
-        if resp.status_code == 200 and resp.json().get("jobs") is not None:
-            logger.info(f"Greenhouse board found: {company_name!r} (slug={slug!r})")
+    except (httpx.TimeoutException, httpx.HTTPError) as exc:
+        raise GreenhouseProbeError(
+            f"Greenhouse probe network error for {company_name!r}: {exc}"
+        ) from exc
+
+    if resp.status_code == 404:
+        logger.debug(
+            "Greenhouse board not found: %r (slug=%r) — silent skip",
+            company_name,
+            slug,
+        )
+        return None
+    if resp.status_code >= 500:
+        raise GreenhouseProbeError(
+            f"Greenhouse {resp.status_code} for {company_name!r}"
+        )
+    if resp.status_code == 200:
+        try:
+            payload = resp.json()
+        except ValueError as exc:
+            raise GreenhouseProbeError(
+                f"Greenhouse non-JSON 200 for {company_name!r}: {exc}"
+            ) from exc
+        if payload.get("jobs") is not None:
+            logger.info("Greenhouse board found: %r (slug=%r)", company_name, slug)
             return GreenhouseScraper(board_slug=slug, company_name=company_name)
-    except Exception as exc:
-        logger.debug(f"Greenhouse probe failed for {company_name!r}: {exc}")
+        return None
+    # 4xx other than 404 — usually rate-limit or auth quirk; surface as transient
+    if 400 <= resp.status_code < 500:
+        raise GreenhouseProbeError(
+            f"Greenhouse {resp.status_code} for {company_name!r}"
+        )
     return None
 
 

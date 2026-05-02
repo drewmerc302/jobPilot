@@ -29,6 +29,9 @@
     took {{ result.duration }}{% endif %}
   </p>
   {% endif %}
+  {% for w in (warnings or []) %}
+  <div class="alert alert-warning" style="margin:8px 0 0;font-size:13px">{{ w }}</div>
+  {% endfor %}
   <a href="/matches" class="btn btn-primary" style="margin-top:8px">View matches →</a>
 </div>
 

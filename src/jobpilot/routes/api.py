@@ -25,6 +25,7 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
 
     progress = run_status_dict.get(run_id)
     run = db.get_run(run_id)
+    warnings: list[str] = []
 
     # Determine stage from in-memory dict first, fall back to DB column.
     # If the row is gone entirely, mark unknown — the partial renders an
@@ -33,6 +34,7 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
         stage = progress.get("stage", "starting")
         result = progress.get("result")
         error = progress.get("error")
+        warnings = list(progress.get("warnings") or [])
     elif run:
         # B2.2: surfaced when the app was killed mid-run; _migrate stamps
         # error='App crashed' on any run with completed_at IS NULL at
@@ -58,6 +60,7 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
         "run": run,
         "result": result,
         "error": error,
+        "warnings": warnings,
     }
 
     if stage in ("starting", "scraping", "filtering"):

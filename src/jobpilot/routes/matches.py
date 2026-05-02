@@ -16,7 +16,7 @@ from jobpilot.fetch_description import fetch_full_description, is_snippet
 from jobpilot.ladder import compute_ladder
 from jobpilot.pipeline import run_pipeline
 from jobpilot.scrapers.adzuna import AdzunaScraper
-from jobpilot.scrapers.greenhouse import probe_greenhouse
+from jobpilot.scrapers.greenhouse import GreenhouseProbeError, probe_greenhouse
 from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
 from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.steps.interview_prep import generate_interview_prep
@@ -116,7 +116,12 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
     client = request.app.state.client
     run_status = request.app.state.run_status
     run_id = db.start_run()
-    run_status[run_id] = {"stage": "starting", "result": None, "error": None}
+    run_status[run_id] = {
+        "stage": "starting",
+        "result": None,
+        "error": None,
+        "warnings": [],
+    }
 
     scrapers: list = [JobSpyScraper(sp)]
     if JooblesScraper.is_configured():
@@ -130,11 +135,21 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
             *[asyncio.to_thread(probe_greenhouse, c) for c in sp.anchor_companies],
             return_exceptions=True,
         )
-        for r in probe_results:
-            if isinstance(r, Exception):
-                logger.warning(f"Greenhouse probe raised: {r}")
+        skipped: list[str] = []
+        for company, r in zip(sp.anchor_companies, probe_results, strict=False):
+            if isinstance(r, GreenhouseProbeError):
+                logger.warning("Greenhouse probe transient failure: %s", r)
+                skipped.append(company)
+            elif isinstance(r, Exception):
+                logger.warning("Greenhouse probe raised: %s", r)
+                skipped.append(company)
             elif r is not None:
                 scrapers.append(r)
+        if skipped:
+            run_status[run_id]["warnings"].append(
+                f"Greenhouse temporarily down — {len(skipped)} target "
+                f"compan{'y' if len(skipped) == 1 else 'ies'} skipped"
+            )
 
     def update_stage(stage: str) -> None:
         run_status[run_id]["stage"] = stage
