@@ -332,7 +332,7 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 44. C1 — pricing table extended + alias-strip
 - [x] 45. C2 — Greenhouse 404 vs 5xx distinguished
 - [x] 46. C3 — Remote-friendly warning logic
-- [ ] 47. C4 — htmx SRI + version pin
+- [x] 47. C4 — htmx SRI + version pin
 - [x] 48. (rolled into A1) Briefcase universal_build / dual arch
 - [x] 49. (rolled into A1) `fetch_typst.py` cross-platform launcher
 - [x] 50. (rolled into B7.3) low_confidence_fields default
