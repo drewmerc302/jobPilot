@@ -170,12 +170,12 @@
     </div>
 
     {# ── Education ── #}
-    {% if profile.education %}
-    <div class="card" style="padding:20px;margin-bottom:16px">
+    <div class="card" style="padding:20px;margin-bottom:16px" id="education-card">
       <h3 style="margin:0 0 14px;font-size:15px">Education</h3>
-      {% for edu in profile.education %}
+      {% set edu_list = profile.education or [{}] %}
+      {% for edu in edu_list %}
       {% set edu_idx = loop.index0 %}
-      <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px;{% if not loop.last %}margin-bottom:12px{% endif %}">
+      <div class="education-row" data-edu-idx="{{ edu_idx }}" style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px;{% if not loop.last %}margin-bottom:12px{% endif %}">
         <div>
           <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Institution</label>
           <input name="edu_{{ edu_idx }}_institution" type="text" value="{{ edu.institution or '' }}" style="margin-top:4px">
@@ -190,8 +190,9 @@
         </div>
       </div>
       {% endfor %}
+      <button type="button" class="btn btn-outline btn-sm" style="margin-top:12px"
+              onclick="(function(){var card=document.getElementById('education-card');var rows=card.querySelectorAll('.education-row');var n=rows.length;var div=document.createElement('div');div.className='education-row';div.dataset.eduIdx=n;div.style.cssText='display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px;margin-top:12px';div.innerHTML='<div><label style=&quot;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)&quot;>Institution</label><input name=&quot;edu_'+n+'_institution&quot; type=&quot;text&quot; style=&quot;margin-top:4px&quot;></div><div><label style=&quot;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)&quot;>Degree</label><input name=&quot;edu_'+n+'_degree&quot; type=&quot;text&quot; style=&quot;margin-top:4px&quot;></div><div><label style=&quot;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)&quot;>Year</label><input name=&quot;edu_'+n+'_graduation_year&quot; type=&quot;text&quot; style=&quot;margin-top:4px&quot;></div>';card.insertBefore(div,this);})()">+ Add education</button>
     </div>
-    {% endif %}
 
     {# ── Bottom save ── #}
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">

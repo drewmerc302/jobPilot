@@ -214,6 +214,12 @@ def extract_resume(
             profile["github"] = contact.get("github", "")
             profile["website"] = contact.get("website", "")
             profile["title"] = contact.get("title", "")
+            # B7.3: defensive defaults so downstream templates and edits
+            # do not crash on a partially-populated extraction.
+            profile.setdefault("experience", [])
+            profile.setdefault("skills", {})
+            profile.setdefault("education", [])
+            profile.setdefault("low_confidence_fields", [])
             return profile
 
     raise ValueError("LLM did not return a structured resume extraction")

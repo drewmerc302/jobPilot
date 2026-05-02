@@ -168,7 +168,9 @@
 
       <div style="margin-top:20px;display:flex;gap:12px">
         <button type="submit" class="btn btn-primary">Looks good →</button>
-        <a href="/wizard/step/1" class="btn btn-outline">Re-upload</a>
+        <a href="/wizard/step/1" class="btn btn-outline"
+           data-tooltip="Replace your resume — your edits to the extracted version will be lost."
+           onclick="return confirm('Re-uploading will discard the extracted resume. Continue?')">Re-upload</a>
       </div>
     </form>
   </div>

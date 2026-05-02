@@ -262,7 +262,14 @@ async def profile_save(request: Request):
             logger.warning(f"New experience parse failed: {exc}")
 
     profile["experience"] = experience
-    profile["education"] = _parse_education_from_form(form)
+    # B7.1: only overwrite education when the form posted at least one
+    # institution. Otherwise the user opened the page without touching
+    # the section and we'd silently nuke their stored entries.
+    parsed_education = _parse_education_from_form(form)
+    if parsed_education:
+        profile["education"] = parsed_education
+    elif "education" not in profile:
+        profile["education"] = []
     profile["low_confidence_fields"] = []
     profile_store.save(profile)
     return RedirectResponse("/profile?saved=1", status_code=303)
