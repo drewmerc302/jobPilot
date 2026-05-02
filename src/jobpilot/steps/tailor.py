@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import platform
+import re
 import subprocess
 from pathlib import Path
 
@@ -63,6 +64,24 @@ ANALYSIS_TOOL = {
         ],
     },
 }
+
+
+_UNSAFE_PATH_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def _safe_dirname(s: str, max_len: int = 80) -> str:
+    """Strip filesystem-illegal chars (Windows + POSIX) and trim.
+
+    Replaces any of `< > : " / \\ | ? *` plus control chars with `_`,
+    collapses runs of `_`, strips leading/trailing whitespace and dots
+    (Windows hates trailing dots), and truncates. Always returns at
+    least `_` to avoid empty path segments.
+    """
+    cleaned = _UNSAFE_PATH_CHARS.sub("_", s or "")
+    cleaned = re.sub(r"\s*_\s*", "_", cleaned)
+    cleaned = re.sub(r"_+", "_", cleaned).strip(" ._")
+    cleaned = cleaned[:max_len].rstrip(" ._")
+    return cleaned or "_"
 
 
 def _typst_binary(config: Config) -> Path:
@@ -290,7 +309,9 @@ def run_tailor_for_job(
 
     resume_data is passed explicitly — storage location is a Phase 2 concern.
     """
-    job_dir = output_dir / f"{job['company']}_{job['id'].replace(':', '_')}"
+    safe_company = _safe_dirname(job.get("company", ""))
+    safe_job_id = _safe_dirname(job["id"].replace(":", "_"))
+    job_dir = output_dir / f"{safe_company}_{safe_job_id}"
     tailored = reorder_resume_yaml(resume_data, analysis.get("reordered_bullets", {}))
 
     if adopt_edits:
