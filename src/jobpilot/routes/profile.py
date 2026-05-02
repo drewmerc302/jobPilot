@@ -212,7 +212,7 @@ def _render_bullet_analysis(profile: dict, scores: dict) -> str:
     <span style="font-size:13px;line-height:1.5">{safe_text}</span>
   </div>
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <span style="font-size:11px;color:{color};font-weight:600;background:{color}18;padding:2px 7px;border-radius:10px">{label}</span>
+    <span style="font-size:11px;color:{color};font-weight:600;background:{color}18;padding:2px 7px;border-radius:10px">{_html.escape(label)}</span>
     {f'<span class="muted" style="font-size:11px">{safe_note}</span>' if note else ""}
     <button type="button" class="btn btn-outline btn-sm"
             style="margin-left:auto"
@@ -372,10 +372,12 @@ async def profile_save(request: Request):
         except Exception as exc:
             logger.warning(f"New experience parse failed: {exc}")
 
+    old_experience = profile.get("experience")
     profile["experience"] = experience
-    profile.pop(
-        "bullet_scores", None
-    )  # scores are positional; stale after any experience edit
+    if experience != old_experience:
+        profile.pop(
+            "bullet_scores", None
+        )  # positional keys stale when experience changes
     # B7.1: only overwrite education when the form posted at least one
     # institution. Otherwise the user opened the page without touching
     # the section and we'd silently nuke their stored entries.
@@ -459,9 +461,11 @@ async def score_bullets_route(request: Request) -> HTMLResponse:
             "<p class='muted' style='font-size:13px'>Scoring failed — please try again.</p>"
         )
 
-    profile["bullet_scores"] = scores
-    profile_store.save(profile)
-    return HTMLResponse(_render_bullet_analysis(profile, scores))
+    # Reload before writing so a concurrent profile_save doesn't get overwritten.
+    fresh = profile_store.load() or {}
+    fresh["bullet_scores"] = scores
+    profile_store.save(fresh)
+    return HTMLResponse(_render_bullet_analysis(fresh, scores))
 
 
 @router.get("/profile/generate-pdf")

@@ -69,7 +69,7 @@ def test_render_bullet_analysis_all_strong():
     }
     scores = {"0-0-0": {"rating": "strong", "note": ""}}
     html = _render_bullet_analysis(profile, scores)
-    assert "strong" in html.lower() or "✓" in html
+    assert "All 1 bullets look strong" in html
 
 
 def test_render_bullet_analysis_shows_weak_bullets():
