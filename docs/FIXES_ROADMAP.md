@@ -309,11 +309,11 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 21. B5.2 — Clear key UI
 - [x] 22. B5.3 — total_budget editable in advanced settings
 - [x] 23. B5.4 — surface missing-key state in base template
-- [ ] 24. B6.1 — guard `open_tailor=1` script
-- [ ] 25. B6.2 — exact-match-first in apply_suggested_edits
-- [ ] 26. B6.3 — manual-job-add error stays in modal
-- [ ] 27. B6.4 — `_is_safe_url` catches 0.0.0.0 / IPv6 unspecified
-- [ ] 28. B6.5 — cap fetched description length
+- [x] 24. B6.1 — guard `open_tailor=1` script
+- [x] 25. B6.2 — exact-match-first in apply_suggested_edits
+- [x] 26. B6.3 — manual-job-add error stays in modal
+- [x] 27. B6.4 — `_is_safe_url` catches 0.0.0.0 / IPv6 unspecified
+- [x] 28. B6.5 — cap fetched description length
 - [ ] 29. B7.1 — Education preserved on profile save
 - [ ] 30. B7.2 — Re-upload confirm dialog
 - [ ] 31. B7.3 — extract_resume defensive defaults
@@ -336,7 +336,7 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 48. (rolled into A1) Briefcase universal_build / dual arch
 - [x] 49. (rolled into A1) `fetch_typst.py` cross-platform launcher
 - [ ] 50. (rolled into B7.3) low_confidence_fields default
-- [ ] 51. (rolled into B6.4) IPv6 link-local in safe-url
+- [x] 51. (rolled into B6.4) IPv6 link-local in safe-url
 - [x] 52. (rolled into B5.4) banner when client is None
 - [x] 53. (rolled into B3.1) screen-reader announce on dismiss
 - [x] 54. (rolled into B2.2) crashed-run UI message
