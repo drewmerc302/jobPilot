@@ -62,7 +62,19 @@ async def lifespan(app: FastAPI):
 
     app.state.config = config
     app.state.db = db
-    app.state.client = anthropic.Anthropic(api_key=config.anthropic_api_key, timeout=90)
+    if not (config.anthropic_api_key or "").strip() and config.has_byo_key:
+        # B5.4: BYO mode but no key persisted — bail on building the SDK client
+        # so routes can render a "Add your key" banner instead of an opaque
+        # 401 from anthropic on first call.
+        logger.warning(
+            "BYO key mode active but anthropic_api_key is empty; "
+            "delaying client construction until a key is saved."
+        )
+        app.state.client = None
+    else:
+        app.state.client = anthropic.Anthropic(
+            api_key=config.anthropic_api_key, timeout=90
+        )
     app.state.profile_store = ProfileStore(config.data_dir)
     app.state.search_params_store = SearchParamsStore(config.data_dir)
     app.state.templates = Jinja2Templates(directory=str(TEMPLATES_DIR))

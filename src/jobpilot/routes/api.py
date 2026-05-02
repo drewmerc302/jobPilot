@@ -104,11 +104,22 @@ async def cost_meter(request: Request) -> HTMLResponse:
 
 
 @router.post("/api/test-key", response_class=HTMLResponse)
-async def test_key(api_key: str = Form(...)) -> HTMLResponse:
-    """Validate an Anthropic API key with a minimal call. Returns an inline status span."""
-    key = api_key.strip()
+async def test_key(request: Request, api_key: str = Form(default="")) -> HTMLResponse:
+    """Validate an Anthropic API key with a minimal call.
+
+    If the form field is blank, fall through to the stored key (so the user
+    can verify the key already saved without retyping it).
+    """
+    key = (api_key or "").strip()
+    using_saved = False
     if not key:
-        return HTMLResponse("<span class='error'>Enter a key to test.</span>")
+        stored = (request.app.state.config.anthropic_api_key or "").strip()
+        if not stored:
+            return HTMLResponse(
+                "<span class='error'>No saved key — paste one to test.</span>"
+            )
+        key = stored
+        using_saved = True
     try:
         client = anthropic.Anthropic(api_key=key, timeout=10)
         client.messages.create(
@@ -116,8 +127,9 @@ async def test_key(api_key: str = Form(...)) -> HTMLResponse:
             max_tokens=1,
             messages=[{"role": "user", "content": "hi"}],
         )
+        label = "saved key" if using_saved else "key"
         return HTMLResponse(
-            "<span style='color:var(--green);font-size:13px'>✓ Key is valid</span>"
+            f"<span style='color:var(--green);font-size:13px'>✓ {label.capitalize()} is valid</span>"
         )
     except anthropic.AuthenticationError:
         return HTMLResponse("<span class='error'>✗ Invalid key</span>")

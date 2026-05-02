@@ -24,6 +24,13 @@
     </span>
   </nav>
 
+  {% if request and request.app.state.client is none and request.app.state.config.has_byo_key %}
+  <div class="alert alert-warning" style="margin:0 16px 16px;display:flex;align-items:center;justify-content:space-between">
+    <span><strong>Anthropic key missing.</strong> AI features are paused until you add a key.</span>
+    <a href="/settings#api_key" class="btn btn-sm" style="margin-left:16px;white-space:nowrap;background:transparent;border:1px solid currentColor">Add key →</a>
+  </div>
+  {% endif %}
+
   {% block content %}{% endblock %}
 
   <div id="toast-container"></div>

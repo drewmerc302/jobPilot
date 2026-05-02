@@ -16,6 +16,8 @@
   </div>
   {% elif saved %}
   <div class="alert alert-info" style="margin-bottom:20px">Settings saved.</div>
+  {% elif cleared %}
+  <div class="alert alert-info" style="margin-bottom:20px">API key cleared. jobPilot is back on starter credit.</div>
   {% endif %}
 
   <form method="post" action="/settings">
@@ -45,12 +47,24 @@
                 hx-target="#test-key-result"
                 hx-swap="innerHTML"
                 hx-indicator="#test-key-spinner"
-                data-tooltip="Make a test call to Anthropic to verify your key is valid before saving.">
+                data-tooltip="Make a test call to Anthropic to verify your key is valid before saving. Leave the field blank to test the saved key.">
           <span id="test-key-spinner" class="htmx-indicator spinner"></span>
-          Test key
+          {% if has_key %}Test saved key{% else %}Test key{% endif %}
         </button>
       </div>
     </div>
+
+    {% if has_key %}
+    <div style="margin:0 0 20px;text-align:right">
+      <button type="button" class="btn btn-outline btn-sm"
+              style="color:var(--red);border-color:var(--red)"
+              onclick="if(confirm('Clear the saved Anthropic key and switch back to starter credit? Existing matches stay; new tailoring will be paused until you add a key again.')){document.getElementById('clear-key-form').submit();}"
+              data-tooltip="Wipe the stored API key. Your match history is preserved.">
+        Clear saved key
+      </button>
+    </div>
+    <form id="clear-key-form" method="post" action="/settings/clear-key" style="display:none"></form>
+    {% endif %}
 
     <div class="card">
       <h3 style="margin:0 0 16px;font-size:15px;font-weight:700">Spending limit</h3>
@@ -67,6 +81,22 @@
         <p class="muted" style="margin:6px 0 0">jobPilot will warn you when you approach this limit. Range: $0.50 – $50.00.</p>
       </div>
     </div>
+
+    <details class="card">
+      <summary style="cursor:pointer;font-weight:700;font-size:14px;list-style:revert">Power user</summary>
+      <div class="form-row" style="margin-top:14px;margin-bottom:0">
+        <label for="total_budget" data-tooltip="Hard ceiling on starter-credit gift mode before you must add your own key. Defaults to $10.">Starter-credit cap</label>
+        <div style="display:flex;align-items:center;gap:14px;margin-top:6px">
+          <input type="range" id="total_budget" name="total_budget"
+                 value="{{ '%.2f'|format(total_budget) }}"
+                 min="5.00" max="50.00" step="1.00"
+                 oninput="document.getElementById('total-budget-display').textContent='$'+parseFloat(this.value).toFixed(2)"
+                 style="flex:1;max-width:260px;width:auto">
+          <span id="total-budget-display" style="font-weight:600;min-width:52px">${{ '%.2f'|format(total_budget) }}</span>
+        </div>
+        <p class="muted" style="margin:6px 0 0">When this is reached jobPilot pauses LLM features until you add your own Anthropic key.</p>
+      </div>
+    </details>
 
     <div style="display:flex;gap:10px;align-items:center">
       <button type="submit" class="btn btn-primary">Save settings</button>
