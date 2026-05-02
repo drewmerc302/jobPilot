@@ -110,3 +110,15 @@ def test_rewrite_bullet_endpoint_exists():
     assert hasattr(profile_mod, "rewrite_bullet_route"), (
         "rewrite_bullet_route not yet defined"
     )
+
+
+def test_rewrite_bullet_newline_normalization():
+    """LLM may return multi-line text; normalization must strip newlines before data-text embed."""
+    import html as _html
+
+    raw = "Led team\nof 10 engineers\r\ndelivering $2M impact"
+    normalized = " ".join(raw.split()).strip()
+    escaped = _html.escape(normalized, quote=True)
+    assert "\n" not in escaped
+    assert "\r" not in escaped
+    assert normalized == "Led team of 10 engineers delivering $2M impact"

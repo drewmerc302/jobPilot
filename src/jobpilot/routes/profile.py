@@ -568,7 +568,13 @@ async def rewrite_bullet_route(request: Request) -> HTMLResponse:
             "<p class='muted' style='font-size:13px'>No suggestion — add more detail above.</p>"
         )
 
-    bullet_idx_int = int(bullet_idx_str) if bullet_idx_str.isdigit() else 0
+    improved = " ".join(improved.split()).strip()
+
+    if not bullet_idx_str.isdigit():
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>Invalid bullet index.</p>"
+        )
+    bullet_idx_int = int(bullet_idx_str)
     dismiss_id = f"rewrite-result-{exp_idx}-{pos_idx}-{bullet_idx_str}"
 
     # Use data-* attributes for LLM-generated text — avoids any encoding issues
