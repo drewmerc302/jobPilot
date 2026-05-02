@@ -94,3 +94,19 @@ def test_render_bullet_analysis_shows_weak_bullets():
     assert "Improve" in html
     # Apostrophe in bullet text must not break the hx-vals attribute (double-quoted)
     assert "'" not in html.split('hx-vals="')[1].split('"')[0]
+
+
+def test_improve_bullet_endpoint_exists():
+    import jobpilot.routes.profile as profile_mod
+
+    assert hasattr(profile_mod, "improve_bullet"), (
+        "improve_bullet endpoint not yet defined"
+    )
+
+
+def test_rewrite_bullet_endpoint_exists():
+    import jobpilot.routes.profile as profile_mod
+
+    assert hasattr(profile_mod, "rewrite_bullet_route"), (
+        "rewrite_bullet_route not yet defined"
+    )

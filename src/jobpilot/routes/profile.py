@@ -468,6 +468,143 @@ async def score_bullets_route(request: Request) -> HTMLResponse:
     return HTMLResponse(_render_bullet_analysis(fresh, scores))
 
 
+@router.post("/profile/improve-bullet", response_class=HTMLResponse)
+async def improve_bullet(request: Request) -> HTMLResponse:
+    from jobpilot.steps.bullet_scorer import question_for_rating
+
+    form = await request.form()
+    exp_idx = (form.get("exp_idx") or "0").strip()
+    pos_idx = (form.get("pos_idx") or "0").strip()
+    bullet_idx = (form.get("bullet_idx") or "0").strip()
+    bullet_text = (form.get("bullet_text") or "").strip()
+    rating = (form.get("rating") or "vague").strip()
+    ta_name = (form.get("ta_name") or "").strip()
+
+    if not bullet_text:
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>Bullet text missing.</p>"
+        )
+
+    question = question_for_rating(rating)
+    answer_field = f"improve-answer-{exp_idx}-{pos_idx}-{bullet_idx}"
+    rewrite_target = f"rewrite-result-{exp_idx}-{pos_idx}-{bullet_idx}"
+
+    hx_vals = _html.escape(
+        json.dumps(
+            {
+                "exp_idx": exp_idx,
+                "pos_idx": pos_idx,
+                "bullet_idx": bullet_idx,
+                "bullet_text": bullet_text,
+                "rating": rating,
+                "ta_name": ta_name,
+            }
+        ),
+        quote=True,
+    )
+
+    return HTMLResponse(f"""
+<div style="margin-top:10px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+  <label style="font-size:13px;font-weight:600">{_html.escape(question)}</label>
+  <textarea id="{_html.escape(answer_field)}"
+            name="{_html.escape(answer_field)}"
+            rows="3"
+            style="font-size:13px;resize:vertical;margin:6px 0 8px;display:block;width:100%"></textarea>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button type="button" class="btn btn-outline btn-sm"
+            hx-post="/profile/rewrite-bullet"
+            hx-target="#{_html.escape(rewrite_target)}"
+            hx-swap="innerHTML"
+            hx-include="#{_html.escape(answer_field)}"
+            hx-vals="{hx_vals}"
+            onclick="this.disabled=true;this.querySelector('.btn-label').textContent='Rewriting…'"
+            hx-on::after-request="this.disabled=false;this.querySelector('.btn-label').textContent='Rewrite bullet'">
+      <span class="btn-label">Rewrite bullet</span>
+    </button>
+    <span class="muted" style="font-size:11px">~$0.01 in AI usage</span>
+  </div>
+  <div id="{_html.escape(rewrite_target)}"></div>
+</div>
+""")
+
+
+@router.post("/profile/rewrite-bullet", response_class=HTMLResponse)
+async def rewrite_bullet_route(request: Request) -> HTMLResponse:
+    from jobpilot.steps.bullet_scorer import rewrite_bullet
+
+    form = await request.form()
+    exp_idx = (form.get("exp_idx") or "0").strip()
+    pos_idx = (form.get("pos_idx") or "0").strip()
+    bullet_idx_str = (form.get("bullet_idx") or "0").strip()
+    bullet_text = (form.get("bullet_text") or "").strip()
+    rating = (form.get("rating") or "vague").strip()
+    ta_name = (form.get("ta_name") or "").strip()
+    answer_field = f"improve-answer-{exp_idx}-{pos_idx}-{bullet_idx_str}"
+    answer = (form.get(answer_field) or "").strip()
+
+    if not bullet_text or not answer:
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>Please fill in the answer above.</p>"
+        )
+
+    try:
+        improved = await asyncio.to_thread(
+            rewrite_bullet,
+            bullet_text,
+            rating,
+            answer,
+            request.app.state.client,
+            request.app.state.config,
+            request.app.state.db,
+        )
+    except Exception as exc:
+        logger.warning(f"Bullet rewrite failed: {exc}")
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>Rewrite failed — please try again.</p>"
+        )
+
+    if not improved:
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>No suggestion — add more detail above.</p>"
+        )
+
+    bullet_idx_int = int(bullet_idx_str) if bullet_idx_str.isdigit() else 0
+    dismiss_id = f"rewrite-result-{exp_idx}-{pos_idx}-{bullet_idx_str}"
+
+    # Use data-* attributes for LLM-generated text — avoids any encoding issues
+    # with json.dumps values embedded inside onclick="".
+    return HTMLResponse(f"""
+<div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:6px;padding:12px;margin-top:8px">
+  <p style="margin:0 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Suggested rewrite</p>
+  <p style="margin:0 0 10px;font-size:13px;line-height:1.6">{_html.escape(improved)}</p>
+  <button type="button" class="btn btn-primary btn-sm"
+          data-ta="{_html.escape(ta_name, quote=True)}"
+          data-line="{bullet_idx_int}"
+          data-dismiss="{_html.escape(dismiss_id, quote=True)}"
+          data-text="{_html.escape(improved, quote=True)}"
+          onclick="(function(b){{
+            var ta=document.querySelector('[name=&quot;'+b.dataset.ta+'&quot;]');
+            if(ta){{
+              var lines=ta.value.split('\\n');
+              var idx=parseInt(b.dataset.line,10);
+              if(idx<lines.length){{lines[idx]=b.dataset.text;}}
+              else{{lines.push(b.dataset.text);}}
+              ta.value=lines.join('\\n');
+            }}
+            var el=document.getElementById(b.dataset.dismiss);
+            if(el)el.innerHTML='<span style=\\'color:var(--green);font-size:12px\\'>&#10003; Applied</span>';
+          }})(this)">
+    Use this
+  </button>
+  <button type="button" class="btn btn-outline btn-sm" style="margin-left:6px"
+          data-dismiss="{_html.escape(dismiss_id, quote=True)}"
+          onclick="var el=document.getElementById(this.dataset.dismiss);if(el)el.innerHTML=''">
+    Discard
+  </button>
+</div>
+""")
+
+
 @router.get("/profile/generate-pdf")
 async def profile_generate_pdf(request: Request):
     from jobpilot.steps.tailor import generate_resume_pdf
