@@ -93,6 +93,15 @@ class Database:
             self._conn.commit()
         except sqlite3.OperationalError:
             pass
+        # A6: distinguish background auto-refresh runs from user-initiated
+        # ones so the daily cap reflects what the user actually triggered.
+        try:
+            self._conn.execute(
+                "ALTER TABLE runs ADD COLUMN auto INTEGER NOT NULL DEFAULT 0"
+            )
+            self._conn.commit()
+        except sqlite3.OperationalError:
+            pass
         # Close any runs that were left open by a crash
         now = datetime.now(timezone.utc).isoformat()
         self._conn.execute(
@@ -330,9 +339,12 @@ class Database:
             )
         self._conn.commit()
 
-    def start_run(self) -> int:
+    def start_run(self, auto: bool = False) -> int:
         now = datetime.now(timezone.utc).isoformat()
-        cursor = self._conn.execute("INSERT INTO runs (started_at) VALUES (?)", (now,))
+        cursor = self._conn.execute(
+            "INSERT INTO runs (started_at, auto) VALUES (?, ?)",
+            (now, 1 if auto else 0),
+        )
         self._conn.commit()
         return cursor.lastrowid
 
@@ -587,9 +599,18 @@ class Database:
         return row["total"] or 0.0
 
     def count_runs_today(self) -> int:
-        # Local-time comparison: started_at is stored as UTC ISO; compare both
-        # in the user's local timezone so the daily cap resets at local
-        # midnight, not 00:00 UTC.
+        # User-visible cap: only count manual (non-auto) runs so a midnight
+        # auto-refresh doesn't silently consume the user's daily budget.
+        # Local-time comparison so the cap resets at the user's midnight.
+        row = self._conn.execute(
+            "SELECT COUNT(*) AS cnt FROM runs "
+            "WHERE date(started_at, 'localtime') = date('now', 'localtime') "
+            "AND auto = 0"
+        ).fetchone()
+        return row["cnt"] or 0
+
+    def count_runs_today_total(self) -> int:
+        """Count every run (manual + auto) started today, local time."""
         row = self._conn.execute(
             "SELECT COUNT(*) AS cnt FROM runs "
             "WHERE date(started_at, 'localtime') = date('now', 'localtime')"

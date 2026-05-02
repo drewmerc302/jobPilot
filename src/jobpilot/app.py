@@ -92,11 +92,15 @@ async def lifespan(app: FastAPI):
         if (
             datetime.now(timezone.utc) - last_completed > timedelta(hours=12)
             and compute_ladder(config, db)["state"] != "gift_exhausted"
+            # A6: respect the daily cap so we never burn a user's manual budget
+            # with a background refresh, and never re-trigger after they've
+            # hit their cap manually.
+            and db.count_runs_today_total() < config.max_runs_per_day
         ):
             _profile = app.state.profile_store.load()
             _sp = app.state.search_params_store.load()
             _client = app.state.client
-            _run_id = db.start_run()
+            _run_id = db.start_run(auto=True)
             app.state.run_status[_run_id] = {
                 "stage": "starting",
                 "result": None,
