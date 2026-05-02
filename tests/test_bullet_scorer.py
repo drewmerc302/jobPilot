@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from jobpilot.steps.bullet_scorer import (
+from jobpilot.steps.bullet_scorer import (  # noqa: E402
     _bullet_key,
     _has_weak_verb,
     question_for_rating,
