@@ -19,6 +19,18 @@
     </div>
   </div>
 
+  {% if bullet_analysis_html is defined and bullet_analysis_html %}
+  <a href="#bullet-analysis-panel" style="display:flex;align-items:center;gap:8px;background:#f0f7ff;border:1px solid #b8d4f0;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:600;color:#1d4ed8;text-decoration:none">
+    <span>✦ Bullet quality results ready</span>
+    <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--muted)">jump to analysis ↓</span>
+  </a>
+  {% else %}
+  <a href="#experience-section" style="display:flex;align-items:center;gap:8px;background:var(--bg-2,#f9f9f9);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--muted);text-decoration:none">
+    <span>✦ Analyze your resume bullets for quality — flag weak verbs, missing metrics &amp; vague outcomes</span>
+    <span style="margin-left:auto;white-space:nowrap;font-size:11px">go to Analyze ↓</span>
+  </a>
+  {% endif %}
+
   <form id="profile-form" method="post" action="/profile/save">
 
     {# ── Add new experience ── #}
@@ -119,7 +131,7 @@
     </div>
 
     {# ── Experience ── #}
-    <div class="card" style="padding:20px;margin-bottom:16px">
+    <div id="experience-section" class="card" style="padding:20px;margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <h3 style="margin:0;font-size:15px">Experience</h3>
         <div style="display:flex;align-items:center;gap:10px">
