@@ -587,8 +587,12 @@ class Database:
         return row["total"] or 0.0
 
     def count_runs_today(self) -> int:
+        # Local-time comparison: started_at is stored as UTC ISO; compare both
+        # in the user's local timezone so the daily cap resets at local
+        # midnight, not 00:00 UTC.
         row = self._conn.execute(
-            "SELECT COUNT(*) AS cnt FROM runs WHERE date(started_at) = date('now')"
+            "SELECT COUNT(*) AS cnt FROM runs "
+            "WHERE date(started_at, 'localtime') = date('now', 'localtime')"
         ).fetchone()
         return row["cnt"] or 0
 
