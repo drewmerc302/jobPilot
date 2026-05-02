@@ -337,10 +337,10 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 49. (rolled into A1) `fetch_typst.py` cross-platform launcher
 - [ ] 50. (rolled into B7.3) low_confidence_fields default
 - [ ] 51. (rolled into B6.4) IPv6 link-local in safe-url
-- [ ] 52. (rolled into B5.4) banner when client is None
+- [x] 52. (rolled into B5.4) banner when client is None
 - [x] 53. (rolled into B3.1) screen-reader announce on dismiss
 - [x] 54. (rolled into B2.2) crashed-run UI message
-- [ ] 55. (rolled into B5.3) per-action cost projection in advanced settings
+- [x] 55. (rolled into B5.3) per-action cost projection in advanced settings
 
 ---
 
