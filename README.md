@@ -100,11 +100,27 @@ Requires [Typst](https://typst.app). The source references screenshots from `scr
 
 jobPilot uses [Briefcase](https://briefcase.readthedocs.io/) for native packaging.
 
+### Vendored Typst binaries
+
+Resume PDF generation uses [Typst](https://typst.app). Binaries are vendored at build time (~40 MB each, gitignored) into `src/jobpilot/resources/typst/<arch>/`. Run once before building or developing:
+
+```bash
+# All four targets (arm64+x86_64 macOS, linux, windows):
+python scripts/fetch_typst.py
+
+# Just the host arch (faster for dev):
+python scripts/fetch_typst.py --current
+```
+
+The bash (`scripts/fetch_typst.sh`) and PowerShell (`scripts/fetch_typst.ps1`) wrappers do the same thing.
+
 **macOS:**
 ```bash
 briefcase build macOS
 briefcase run macOS
 ```
+
+`universal_build = false` in `pyproject.toml` — produce one bundle per host arch and ship both, or set `true` if you have an `arm64+x86_64` Python.
 
 **Windows** — requires a Windows machine or CI. See [`docs/WINDOWS_BUILD.md`](docs/WINDOWS_BUILD.md) for full instructions including a ready-to-use GitHub Actions workflow.
 

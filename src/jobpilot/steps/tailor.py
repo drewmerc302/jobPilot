@@ -67,11 +67,20 @@ ANALYSIS_TOOL = {
 
 def _typst_binary(config: Config) -> Path:
     system = platform.system().lower()
+    machine = platform.machine().lower()
+    base = config.template_dir.parent / "typst"
     if system == "darwin":
-        return config.template_dir.parent / "typst" / "macos" / "typst"
+        arch_dir = "macos-arm64" if machine in ("arm64", "aarch64") else "macos-x86_64"
+        candidate = base / arch_dir / "typst"
+        if candidate.exists():
+            return candidate
+        legacy = base / "macos" / "typst"
+        if legacy.exists():
+            return legacy
+        return candidate
     if system == "windows":
-        return config.template_dir.parent / "typst" / "windows" / "typst.exe"
-    return config.template_dir.parent / "typst" / "linux" / "typst"
+        return base / "windows" / "typst.exe"
+    return base / "linux" / "typst"
 
 
 def reorder_resume_yaml(resume_data: dict, reorder_map: dict) -> dict:

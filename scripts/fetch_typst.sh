@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Download Typst binaries into src/jobpilot/resources/typst/{macos,linux,windows}/
-# These are vendored at build time, not checked into git, since each is ~40 MB.
+# Download Typst binaries into src/jobpilot/resources/typst/{macos-arm64,macos-x86_64,linux,windows}/.
+# Vendored at build time, not checked into git (each is ~40 MB).
 #
 # Usage: ./scripts/fetch_typst.sh [version]
 #   version defaults to v0.14.2
@@ -32,8 +32,9 @@ fetch() {
     rm -rf "$tmp"
 }
 
-fetch "macOS arm64" "macos"   "typst-aarch64-apple-darwin.tar.xz"   "typst-aarch64-apple-darwin/typst"
-fetch "Linux x64"   "linux"   "typst-x86_64-unknown-linux-musl.tar.xz" "typst-x86_64-unknown-linux-musl/typst"
-fetch "Windows x64" "windows" "typst-x86_64-pc-windows-msvc.zip"    "typst-x86_64-pc-windows-msvc/typst.exe"
+fetch "macOS arm64"  "macos-arm64"  "typst-aarch64-apple-darwin.tar.xz"      "typst-aarch64-apple-darwin/typst"
+fetch "macOS x86_64" "macos-x86_64" "typst-x86_64-apple-darwin.tar.xz"        "typst-x86_64-apple-darwin/typst"
+fetch "Linux x86_64" "linux"        "typst-x86_64-unknown-linux-musl.tar.xz" "typst-x86_64-unknown-linux-musl/typst"
+fetch "Windows x86_64" "windows"    "typst-x86_64-pc-windows-msvc.zip"       "typst-x86_64-pc-windows-msvc/typst.exe"
 
 echo "Done. Binaries in: $RES"
