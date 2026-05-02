@@ -53,6 +53,34 @@
     }
   });
 
+  // Undo toast when a match row is dismissed (B3.1)
+  document.addEventListener("matchDismissed", function (e) {
+    const d = e.detail || {};
+    const toast = document.getElementById("toast-container");
+    if (!toast) return;
+    const label = [d.company, d.title].filter(Boolean).join(" — ") || "Match";
+    toast.innerHTML =
+      `<div class="toast" role="status" aria-live="polite">` +
+        `Dismissed ${escapeHtml(label)}. ` +
+        `<button type="button" class="btn btn-sm" id="undo-dismiss-btn" ` +
+        `style="margin-left:8px;background:transparent;border:1px solid #fff;color:#fff">Undo</button>` +
+      `</div>`;
+    const undoBtn = document.getElementById("undo-dismiss-btn");
+    if (undoBtn) {
+      undoBtn.addEventListener("click", function () {
+        fetch(`/matches/${encodeURIComponent(d.job_id)}/undismiss`, { method: "POST" })
+          .then(() => { window.location.href = "/matches"; });
+      });
+    }
+    setTimeout(() => { toast.innerHTML = ""; }, 8000);
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+    });
+  }
+
   // Refresh cost meter when run completes
   document.addEventListener("runComplete", function (e) {
     const detail = e.detail || {};

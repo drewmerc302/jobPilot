@@ -156,7 +156,7 @@ textarea { resize: vertical; min-height: 80px; }
 .badge-interviewing{ background: #fff3cd; color: #664d03; }
 .badge-offer      { background: #d1e7dd; color: #0a3622; font-weight: 800; }
 .badge-rejected   { background: #f8d7da; color: #58151c; }
-.badge-withdrawn  { background: #e9ecef; color: var(--gray); }
+.badge-withdrawn  { background: #f8f9fa; color: var(--gray); text-decoration: line-through; }
 
 /* ── Matches list ────────────────────────────────────────── */
 .matches-table { width: 100%; border-collapse: collapse; }

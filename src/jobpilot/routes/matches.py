@@ -277,8 +277,26 @@ async def update_status(
 
 @router.post("/matches/{job_id}/dismiss", response_class=HTMLResponse)
 async def dismiss_match(job_id: str, request: Request) -> HTMLResponse:
-    request.app.state.db.dismiss_match(job_id)
-    # Empty response — HTMX removes the row via hx-swap="outerHTML"
+    db = request.app.state.db
+    job = db.get_job(job_id) or {}
+    db.dismiss_match(job_id)
+    response = HTMLResponse("")
+    response.headers["HX-Trigger"] = json.dumps(
+        {
+            "matchDismissed": {
+                "job_id": job_id,
+                "company": job.get("company", ""),
+                "title": job.get("title", ""),
+            }
+        }
+    )
+    return response
+
+
+@router.post("/matches/{job_id}/undismiss", response_class=HTMLResponse)
+async def undismiss_match(job_id: str, request: Request) -> HTMLResponse:
+    request.app.state.db.undismiss_match(job_id)
+    # Caller bounces back to /matches via the toast Undo handler.
     return HTMLResponse("")
 
 

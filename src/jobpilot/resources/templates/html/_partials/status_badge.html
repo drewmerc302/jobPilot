@@ -6,7 +6,7 @@
           hx-swap="outerHTML"
           name="status">
     {% for s in ["new","interested","applied","interviewing","offer","rejected","withdrawn"] %}
-    <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+    <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s|capitalize }}</option>
     {% endfor %}
   </select>
 </div>
