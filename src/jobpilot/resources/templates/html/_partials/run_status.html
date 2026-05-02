@@ -25,8 +25,8 @@
   {% if result %}
   <p class="muted">
     {{ result.new_jobs }} new jobs found ·
-    {{ result.new_matches }} matches ·
-    took {{ result.duration }}
+    {{ result.new_matches }} matches{% if result.duration %} ·
+    took {{ result.duration }}{% endif %}
   </p>
   {% endif %}
   <a href="/matches" class="btn btn-primary" style="margin-top:8px">View matches →</a>
@@ -40,8 +40,19 @@
   <a href="/wizard/step/4" class="btn btn-outline" style="margin-top:8px">Try again</a>
 </div>
 
+{% elif stage == "crashed" %}
+<div id="run-status">
+  <div class="alert alert-error">
+    <strong>Run interrupted</strong> — the app stopped before this search finished. Try again to start a fresh run.
+  </div>
+  <a href="/wizard/step/4" class="btn btn-outline" style="margin-top:8px">Start a new search</a>
+</div>
+
 {% else %}
 <div id="run-status">
-  <p class="muted">Waiting for run status…</p>
+  <div class="alert alert-warning">
+    We can't find that run. It may have been cleared after a restart.
+  </div>
+  <a href="/wizard/step/4" class="btn btn-primary" style="margin-top:8px">Start a new search</a>
 </div>
 {% endif %}

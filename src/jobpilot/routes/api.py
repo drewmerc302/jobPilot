@@ -26,17 +26,27 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
     progress = run_status_dict.get(run_id)
     run = db.get_run(run_id)
 
-    # Determine stage from in-memory dict first, fall back to DB column
+    # Determine stage from in-memory dict first, fall back to DB column.
+    # If the row is gone entirely, mark unknown — the partial renders an
+    # actionable "start a new search" message instead of a poll loop.
     if progress is not None:
         stage = progress.get("stage", "starting")
         result = progress.get("result")
         error = progress.get("error")
     elif run:
-        stage = run.get("current_stage") or (
-            "done" if run.get("completed_at") else "starting"
-        )
-        result = None
-        error = run.get("error")
+        # B2.2: surfaced when the app was killed mid-run; _migrate stamps
+        # error='App crashed' on any run with completed_at IS NULL at
+        # startup, so the polling page shows a real recovery message.
+        if (run.get("error") or "").lower() == "app crashed":
+            stage = "crashed"
+            result = None
+            error = run.get("error")
+        else:
+            stage = run.get("current_stage") or (
+                "done" if run.get("completed_at") else "starting"
+            )
+            result = None
+            error = run.get("error")
     else:
         stage = "unknown"
         result = None
