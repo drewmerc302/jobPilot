@@ -290,7 +290,7 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 2. A1 — `_typst_binary` arch detection
 - [x] 3. A2 — sanitize `job['company']` for paths
 - [x] 4. A3 — auto-pick free port + health probe
-- [ ] 5. A4 — UTC drift in `count_runs_today`
+- [x] 5. A4 — UTC drift in `count_runs_today`
 - [ ] 6. A5 — pystray Linux deps in pyproject
 - [ ] 7. A6 — auto-refresh races daily cap
 - [ ] 8. B1.1 — reframe classifier handles remote_ok / seniority / radius
