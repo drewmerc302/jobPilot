@@ -77,6 +77,8 @@ system_runtime_requires = [
     # "libgirepository-2.0-0",
     # Dependencies that GTK looks for at runtime
     "libcanberra-gtk3-module",
+    # pystray system tray icon (AppIndicator backend on Debian/Ubuntu)
+    "gir1.2-appindicator3-0.1",
     # Needed to provide WebKit2 at runtime
     # Note: Debian 11 requires gir1.2-webkit2-4.0 instead
     # "gir1.2-webkit2-4.1",
@@ -97,6 +99,8 @@ system_runtime_requires = [
     "gtk3",
     # Dependencies that GTK looks for at runtime
     "libcanberra-gtk3",
+    # pystray tray-icon backend
+    "libappindicator-gtk3",
     # Needed to provide WebKit2 at runtime
     # "webkit2gtk3",
 ]
@@ -116,6 +120,8 @@ system_runtime_requires = [
     "gobject-introspection", "typelib(Gtk) = 3.0",
     # Dependencies that GTK looks for at runtime
     "libcanberra-gtk3-module",
+    # pystray tray-icon backend
+    "libappindicator-gtk3",
     # Needed to provide WebKit2 at runtime
     # "libwebkit2gtk3", "typelib(WebKit2)",
 ]
@@ -143,6 +149,8 @@ system_runtime_requires = [
     "gobject-introspection-runtime",
     # Dependencies that GTK looks for at runtime
     "libcanberra",
+    # pystray tray-icon backend
+    "libappindicator-gtk3",
     # Needed to provide WebKit2 at runtime
     # "webkit2gtk",
 ]
