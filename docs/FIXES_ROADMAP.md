@@ -295,9 +295,9 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 7. A6 — auto-refresh races daily cap
 - [x] 8. B1.1 — reframe classifier handles remote_ok / seniority / radius
 - [x] 9. B1.2 — search-params save: tweak doesn't kick pipeline
-- [ ] 10. B2.1 — unknown stage shows error + recovery link
-- [ ] 11. B2.2 — server-restart "App crashed" surfaces in UI
-- [ ] 12. B2.3 — guard `result.duration` in run_status partial
+- [x] 10. B2.1 — unknown stage shows error + recovery link
+- [x] 11. B2.2 — server-restart "App crashed" surfaces in UI
+- [x] 12. B2.3 — guard `result.duration` in run_status partial
 - [ ] 13. B3.1 — undo dismiss with toast + route
 - [ ] 14. B3.2 — withdrawn badge distinct color
 - [ ] 15. B3.3 — capitalize status options for display
@@ -339,7 +339,7 @@ Wave C (after B merges, 1 sonnet agent):
 - [ ] 51. (rolled into B6.4) IPv6 link-local in safe-url
 - [ ] 52. (rolled into B5.4) banner when client is None
 - [ ] 53. (rolled into B3.1) screen-reader announce on dismiss
-- [ ] 54. (rolled into B2.2) crashed-run UI message
+- [x] 54. (rolled into B2.2) crashed-run UI message
 - [ ] 55. (rolled into B5.3) per-action cost projection in advanced settings
 
 ---
