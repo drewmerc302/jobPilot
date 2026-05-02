@@ -216,8 +216,9 @@ async def step2_post(request: Request) -> HTMLResponse:
             )
             if scores:
                 fresh = app_state.profile_store.load() or {}
-                fresh["bullet_scores"] = scores
-                app_state.profile_store.save(fresh)
+                if fresh.get("experience") == committed_profile.get("experience"):
+                    fresh["bullet_scores"] = scores
+                    app_state.profile_store.save(fresh)
         except Exception as exc:
             logger.warning(f"Background bullet scoring failed: {exc}")
 

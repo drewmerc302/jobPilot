@@ -180,7 +180,7 @@ def _render_bullet_analysis(profile: dict, scores: dict) -> str:
             continue
         rating = score_data["rating"]
         note = score_data.get("note", "")
-        icon, color, label = _RATING_LABELS.get(rating, ("⚠", "#d97706", rating))
+        icon, color, label = _RATING_LABELS.get(rating, ("⚠", "#d97706", "Needs work"))
         safe_text = _html.escape(info["text"])
         safe_context = _html.escape(info["context"])
         safe_note = _html.escape(note)
@@ -461,8 +461,13 @@ async def score_bullets_route(request: Request) -> HTMLResponse:
             "<p class='muted' style='font-size:13px'>Scoring failed — please try again.</p>"
         )
 
-    # Reload before writing so a concurrent profile_save doesn't get overwritten.
+    # Reload before writing. If experience changed while scoring ran, the score
+    # keys reference the old version's indices — discard rather than corrupt.
     fresh = profile_store.load() or {}
+    if fresh.get("experience") != profile.get("experience"):
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>Profile changed while analyzing — please re-run.</p>"
+        )
     fresh["bullet_scores"] = scores
     profile_store.save(fresh)
     return HTMLResponse(_render_bullet_analysis(fresh, scores))
@@ -547,6 +552,12 @@ async def rewrite_bullet_route(request: Request) -> HTMLResponse:
             "<p class='muted' style='font-size:13px'>Please fill in the answer above.</p>"
         )
 
+    if not bullet_idx_str.isdigit():
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>Invalid bullet index.</p>"
+        )
+    bullet_idx_int = int(bullet_idx_str)
+
     try:
         improved = await asyncio.to_thread(
             rewrite_bullet,
@@ -563,18 +574,11 @@ async def rewrite_bullet_route(request: Request) -> HTMLResponse:
             "<p class='muted' style='font-size:13px'>Rewrite failed — please try again.</p>"
         )
 
+    improved = " ".join(improved.split()).strip()
     if not improved:
         return HTMLResponse(
             "<p class='muted' style='font-size:13px'>No suggestion — add more detail above.</p>"
         )
-
-    improved = " ".join(improved.split()).strip()
-
-    if not bullet_idx_str.isdigit():
-        return HTMLResponse(
-            "<p class='muted' style='font-size:13px'>Invalid bullet index.</p>"
-        )
-    bullet_idx_int = int(bullet_idx_str)
     dismiss_id = f"rewrite-result-{exp_idx}-{pos_idx}-{bullet_idx_str}"
 
     # Use data-* attributes for LLM-generated text — avoids any encoding issues
