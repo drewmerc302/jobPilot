@@ -77,6 +77,7 @@ async def matches_list(request: Request) -> HTMLResponse:
     spent = db.sum_costs_this_month()
     sp = request.app.state.search_params_store.load()
     refresh_capped = request.query_params.get("refresh_capped")
+    just_saved = request.query_params.get("just_saved")
     ladder = compute_ladder(config, db)
     return request.app.state.templates.TemplateResponse(
         request,
@@ -87,6 +88,7 @@ async def matches_list(request: Request) -> HTMLResponse:
             "budget": config.monthly_budget,
             "sp": sp,
             "refresh_capped": refresh_capped,
+            "just_saved": just_saved,
             "ladder": ladder,
         },
     )

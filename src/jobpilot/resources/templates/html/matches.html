@@ -12,6 +12,13 @@
   </div>
   {% endif %}
 
+  {% if just_saved %}
+  <div class="alert alert-info" id="just-saved-banner" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <span>✓ Search saved. Existing matches re-filtered with the new settings.</span>
+    <button class="btn btn-sm" style="margin-left:16px;white-space:nowrap;background:transparent;border:1px solid var(--border)" onclick="document.getElementById('just-saved-banner').remove()">Dismiss</button>
+  </div>
+  {% endif %}
+
   {% if spent and budget and spent >= budget * 0.8 %}
   {% if spent >= budget %}
   <div class="alert alert-error" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">

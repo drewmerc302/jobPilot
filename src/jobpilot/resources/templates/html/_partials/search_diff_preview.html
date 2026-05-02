@@ -1,6 +1,10 @@
 {% if category == "tweak" %}
 <div class="alert alert-info" style="margin:0">
-  ✓ Free — these changes refine your existing results. No re-scoring needed.
+  ✓ Free — refines existing results. No re-scoring needed.
+</div>
+{% elif category == "refilter" %}
+<div class="alert alert-info" style="margin:0">
+  ✓ Free — re-filters existing matches. The next refresh will pull a wider net with the new settings.
 </div>
 {% else %}
 <div style="padding:12px 16px;background:#fff9e6;border:1px solid var(--yellow);border-radius:var(--radius);font-size:14px">
