@@ -317,18 +317,18 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 29. B7.1 — Education preserved on profile save
 - [x] 30. B7.2 — Re-upload confirm dialog
 - [x] 31. B7.3 — extract_resume defensive defaults
-- [ ] 32. B8.1 — "Target companies" everywhere
-- [ ] 33. B8.2 — plain-language search-diff copy
-- [ ] 34. B8.3 — `jobs_reviewed` → `jobs_scanned`
-- [ ] 35. B8.4 — Generate/Re-generate caps consistent
-- [ ] 36. B8.5 — unify "Open original listing"
-- [ ] 37. B8.6 — tooltips work on touch devices
-- [ ] 38. B8.7 — manual-job Score tooltip
-- [ ] 39. B8.8 — manual-job "Why it fits" copy
-- [ ] 40. B8.9 — "~$0.03 in AI usage"
-- [ ] 41. B8.10 — "Add a job from another site"
-- [ ] 42. B8.11 — `?` overlay focus trap (use `<dialog>`)
-- [ ] 43. B8.12 — drop redundant `D` shortcut
+- [x] 32. B8.1 — "Target companies" everywhere
+- [x] 33. B8.2 — plain-language search-diff copy
+- [x] 34. B8.3 — `jobs_reviewed` → `jobs_scanned`
+- [x] 35. B8.4 — Generate/Re-generate caps consistent
+- [x] 36. B8.5 — unify "Open original listing"
+- [x] 37. B8.6 — tooltips work on touch devices
+- [x] 38. B8.7 — manual-job Score tooltip
+- [x] 39. B8.8 — manual-job "Why it fits" copy
+- [x] 40. B8.9 — "~$0.03 in AI usage"
+- [x] 41. B8.10 — "Add a job from another site"
+- [x] 42. B8.11 — `?` overlay focus trap (use `<dialog>`)
+- [x] 43. B8.12 — drop redundant `D` shortcut
 - [ ] 44. C1 — pricing table extended + alias-strip
 - [ ] 45. C2 — Greenhouse 404 vs 5xx distinguished
 - [ ] 46. C3 — Remote-friendly warning logic
