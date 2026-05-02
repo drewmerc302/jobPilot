@@ -6,11 +6,15 @@ All app state is set up in the lifespan context and attached to app.state.
 
 import asyncio
 import html as _html_mod
+import json
 import logging
 import os
 import re
+import socket
 import threading
 import time
+import urllib.error
+import urllib.request
 import webbrowser
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
@@ -33,10 +37,11 @@ from jobpilot.state import ProfileStore, SearchParamsStore
 
 logger = logging.getLogger(__name__)
 
-PORT = 8765
+DEFAULT_PORT = 8765
 RESOURCES_DIR = Path(__file__).parent / "resources"
 TEMPLATES_DIR = RESOURCES_DIR / "templates" / "html"
 STATIC_DIR = RESOURCES_DIR / "static"
+RUNTIME_PATH = Path.home() / ".jobpilot" / "runtime.json"
 
 
 @asynccontextmanager
@@ -156,18 +161,50 @@ def create_app() -> FastAPI:
     app.include_router(settings_router)
     app.include_router(search_params_router)
     app.include_router(api_router)
+
+    @app.get("/health")
+    def _health() -> dict:
+        return {"status": "ok", "app": "jobpilot"}
+
     return app
 
 
 def _port_in_use(port: int) -> bool:
-    import socket
-
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
-def _serve(app: FastAPI) -> None:
-    uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="warning")
+def _is_jobpilot_at(port: int) -> bool:
+    """Probe /health to confirm a jobpilot instance owns the port."""
+    try:
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{port}/health", timeout=0.5
+        ) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+            return payload.get("app") == "jobpilot"
+    except (urllib.error.URLError, OSError, ValueError, TimeoutError):
+        return False
+
+
+def _pick_port(start: int = DEFAULT_PORT, attempts: int = 20) -> int:
+    """Return the first free port in [start, start+attempts)."""
+    for offset in range(attempts):
+        port = start + offset
+        if not _port_in_use(port):
+            return port
+    raise RuntimeError(f"Could not find a free port in {start}-{start + attempts - 1}")
+
+
+def _save_runtime_port(port: int) -> None:
+    try:
+        RUNTIME_PATH.parent.mkdir(parents=True, exist_ok=True)
+        RUNTIME_PATH.write_text(json.dumps({"port": port}))
+    except OSError as exc:
+        logger.warning(f"Could not persist runtime port: {exc}")
+
+
+def _serve(app: FastAPI, port: int) -> None:
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
 
 
 def _build_tray_image() -> Image.Image:
@@ -178,17 +215,20 @@ def _build_tray_image() -> Image.Image:
 
 
 def main() -> None:
-    if _port_in_use(PORT):
-        webbrowser.open(f"http://127.0.0.1:{PORT}/")
+    if _port_in_use(DEFAULT_PORT) and _is_jobpilot_at(DEFAULT_PORT):
+        webbrowser.open(f"http://127.0.0.1:{DEFAULT_PORT}/")
         return
 
+    port = _pick_port(DEFAULT_PORT, attempts=20)
+    _save_runtime_port(port)
+
     fastapi_app = create_app()
-    threading.Thread(target=_serve, args=(fastapi_app,), daemon=True).start()
+    threading.Thread(target=_serve, args=(fastapi_app, port), daemon=True).start()
     time.sleep(0.8)
-    webbrowser.open(f"http://127.0.0.1:{PORT}/")
+    webbrowser.open(f"http://127.0.0.1:{port}/")
 
     def _open(_icon, _item):
-        webbrowser.open(f"http://127.0.0.1:{PORT}/")
+        webbrowser.open(f"http://127.0.0.1:{port}/")
 
     def _quit(icon, _item):
         icon.stop()
