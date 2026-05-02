@@ -314,9 +314,9 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 26. B6.3 — manual-job-add error stays in modal
 - [x] 27. B6.4 — `_is_safe_url` catches 0.0.0.0 / IPv6 unspecified
 - [x] 28. B6.5 — cap fetched description length
-- [ ] 29. B7.1 — Education preserved on profile save
-- [ ] 30. B7.2 — Re-upload confirm dialog
-- [ ] 31. B7.3 — extract_resume defensive defaults
+- [x] 29. B7.1 — Education preserved on profile save
+- [x] 30. B7.2 — Re-upload confirm dialog
+- [x] 31. B7.3 — extract_resume defensive defaults
 - [ ] 32. B8.1 — "Target companies" everywhere
 - [ ] 33. B8.2 — plain-language search-diff copy
 - [ ] 34. B8.3 — `jobs_reviewed` → `jobs_scanned`
@@ -335,7 +335,7 @@ Wave C (after B merges, 1 sonnet agent):
 - [ ] 47. C4 — htmx SRI + version pin
 - [x] 48. (rolled into A1) Briefcase universal_build / dual arch
 - [x] 49. (rolled into A1) `fetch_typst.py` cross-platform launcher
-- [ ] 50. (rolled into B7.3) low_confidence_fields default
+- [x] 50. (rolled into B7.3) low_confidence_fields default
 - [x] 51. (rolled into B6.4) IPv6 link-local in safe-url
 - [x] 52. (rolled into B5.4) banner when client is None
 - [x] 53. (rolled into B3.1) screen-reader announce on dismiss
