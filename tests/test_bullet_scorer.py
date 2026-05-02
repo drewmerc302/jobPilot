@@ -83,7 +83,7 @@ def test_render_bullet_analysis_shows_weak_bullets():
                     {
                         "title": "SWE",
                         "dates": "2023-present",
-                        "achievements": ["Helped the team ship features"],
+                        "achievements": ["Helped the team's roadmap ship on time"],
                     }
                 ],
             }
