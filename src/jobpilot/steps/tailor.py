@@ -119,6 +119,15 @@ def reorder_resume_yaml(resume_data: dict, reorder_map: dict) -> dict:
 def apply_suggested_edits(
     resume_data: dict, edits: list[dict], adopt_indices: set[int]
 ) -> dict:
+    """Apply LLM-suggested edits to a resume.
+
+    Exact-match-first: if any list item equals `original` verbatim, only
+    that item is rewritten. The substring fallback only fires when no
+    exact match exists in any of the bullet pools — this prevents one
+    bullet's text from being rewritten just because another bullet
+    contains it as a substring (e.g. "led the team" inside "led the
+    team that...").
+    """
     result = copy.deepcopy(resume_data)
     edits_to_apply = {
         edit["original"]: edit["suggested"]
@@ -128,25 +137,51 @@ def apply_suggested_edits(
     if not edits_to_apply:
         return result
 
-    if "summary" in result:
-        for original, suggested in edits_to_apply.items():
-            if original in result["summary"]:
-                result["summary"] = result["summary"].replace(original, suggested)
-
+    # Collect every bullet pool we may touch so we can detect whether an
+    # exact match exists before resorting to substring replace.
+    bullet_pools: list[list] = []
     for exp in result.get("experience", []):
         for field in ("bullets", "achievements"):
-            items = exp.get(field, [])
-            for j, item in enumerate(items):
-                for original, suggested in edits_to_apply.items():
-                    if original in item:
-                        items[j] = item.replace(original, suggested)
+            if isinstance(exp.get(field), list):
+                bullet_pools.append(exp[field])
         for pos in exp.get("positions", []):
             for field in ("achievements", "bullets"):
-                items = pos.get(field, [])
-                for j, item in enumerate(items):
-                    for original, suggested in edits_to_apply.items():
-                        if original in item:
-                            items[j] = item.replace(original, suggested)
+                if isinstance(pos.get(field), list):
+                    bullet_pools.append(pos[field])
+
+    summary_text = (
+        result.get("summary", "") if isinstance(result.get("summary"), str) else ""
+    )
+
+    for original, suggested in edits_to_apply.items():
+        exact_in_summary = summary_text == original
+        exact_in_bullets = any(
+            any(item == original for item in pool) for pool in bullet_pools
+        )
+
+        if exact_in_summary:
+            result["summary"] = suggested
+            continue
+
+        if exact_in_bullets:
+            for pool in bullet_pools:
+                for j, item in enumerate(pool):
+                    if item == original:
+                        pool[j] = suggested
+            continue
+
+        # Substring fallback (last resort)
+        logger.info(
+            "apply_suggested_edits fallback: no exact match for "
+            "%r, using substring replace",
+            original[:80],
+        )
+        if isinstance(result.get("summary"), str) and original in result["summary"]:
+            result["summary"] = result["summary"].replace(original, suggested)
+        for pool in bullet_pools:
+            for j, item in enumerate(pool):
+                if isinstance(item, str) and original in item:
+                    pool[j] = item.replace(original, suggested)
 
     return result
 
@@ -162,6 +197,16 @@ def llm_resume_analysis(
 ) -> dict:
     if client is None:
         client = anthropic.Anthropic(api_key=config.anthropic_api_key, timeout=90)
+    # B6.5: cap the JD text we send. 8k chars ≈ 2k tokens — keeps the bill
+    # bounded if a paste-bomb description sneaks in.
+    MAX_JD_CHARS = 8_000
+    if isinstance(job_description, str) and len(job_description) > MAX_JD_CHARS:
+        logger.info(
+            "Truncating job_description from %d to %d chars before LLM call",
+            len(job_description),
+            MAX_JD_CHARS,
+        )
+        job_description = job_description[:MAX_JD_CHARS]
     kwargs = dict(
         model=config.llm_tailor_model,
         max_tokens=4096,

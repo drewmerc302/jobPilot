@@ -117,4 +117,12 @@ def fetch_full_description(url: str) -> str | None:
     if len(text) < 300:
         logger.debug(f"Extracted text too short ({len(text)} chars) for {url}")
         return None
+    # B6.5: cap to keep token costs predictable. 12k chars ≈ 3k tokens — well
+    # below the 8k cap llm_resume_analysis applies to job_description.
+    MAX_DESC_CHARS = 12_000
+    if len(text) > MAX_DESC_CHARS:
+        text = text[:MAX_DESC_CHARS]
+        logger.info(
+            "Truncated fetched description to %d chars for %s", MAX_DESC_CHARS, url
+        )
     return text

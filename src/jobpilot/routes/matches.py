@@ -38,6 +38,7 @@ def _is_safe_url(url: str) -> bool:
         host = p.hostname
         if not host:
             return False
+        # IPv6 addresses come from urlparse with surrounding brackets stripped.
         try:
             addr = ipaddress.ip_address(host)
             if (
@@ -45,6 +46,8 @@ def _is_safe_url(url: str) -> bool:
                 or addr.is_loopback
                 or addr.is_link_local
                 or addr.is_reserved
+                or addr.is_unspecified
+                or addr.is_multicast
             ):
                 return False
         except ValueError:
@@ -526,9 +529,11 @@ async def add_job(
 ):
     url = url.strip()
     if not _is_safe_url(url):
+        # B6.3: HTMX form swaps this fragment into #add-job-result so the
+        # modal stays open with the user's typed values intact.
         return HTMLResponse(
-            "<span class='error'>Invalid URL — must be http/https and not a private address.</span>",
-            status_code=400,
+            "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
+            "Invalid URL — must be a public http(s) link.</div>"
         )
     db = request.app.state.db
     config = request.app.state.config
@@ -548,6 +553,7 @@ async def add_job(
     )
 
     # Auto-analyze when description provided and budget allows
+    redirect_url = f"/matches/{job_id}"
     if clean_description and compute_ladder(config, db)["state"] != "gift_exhausted":
         profile = request.app.state.profile_store.load()
         if profile:
@@ -556,13 +562,19 @@ async def add_job(
                 await asyncio.to_thread(
                     ensure_analysis, job, profile, db, config, client=client, force=True
                 )
-                return RedirectResponse(
-                    f"/matches/{job_id}?open_tailor=1", status_code=303
-                )
+                redirect_url = f"/matches/{job_id}?open_tailor=1"
             except Exception as exc:
                 logger.error(f"Analysis failed for manually added job {job_id}: {exc}")
 
-    return RedirectResponse(f"/matches/{job_id}", status_code=303)
+    # HTMX-aware: when the request came from the in-page form, ask the
+    # client to navigate via HX-Redirect instead of a 303 (the form was
+    # swapping into a fragment slot, so a Location redirect would be
+    # ignored).
+    if request.headers.get("HX-Request") == "true":
+        response = HTMLResponse("")
+        response.headers["HX-Redirect"] = redirect_url
+        return response
+    return RedirectResponse(redirect_url, status_code=303)
 
 
 @router.get("/output/{path:path}")

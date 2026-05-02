@@ -209,8 +209,12 @@
             type="button" aria-label="Close"
             style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">×</button>
   </div>
-  <form method="post" action="/matches/add-job" style="padding:20px;display:flex;flex-direction:column;gap:14px"
-        onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.textContent='Saving…'">
+  <form hx-post="/matches/add-job"
+        hx-target="#add-job-result"
+        hx-swap="innerHTML"
+        hx-disabled-elt="button[type=submit]"
+        style="padding:20px;display:flex;flex-direction:column;gap:14px">
+    <div id="add-job-result"></div>
     <div>
       <label for="aj-url">Job URL <span style="color:var(--red)">*</span></label>
       <input id="aj-url" type="url" name="url" required placeholder="https://…" style="margin-top:4px">
