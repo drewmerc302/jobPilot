@@ -293,8 +293,8 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 5. A4 — UTC drift in `count_runs_today`
 - [x] 6. A5 — pystray Linux deps in pyproject
 - [x] 7. A6 — auto-refresh races daily cap
-- [ ] 8. B1.1 — reframe classifier handles remote_ok / seniority / radius
-- [ ] 9. B1.2 — search-params save: tweak doesn't kick pipeline
+- [x] 8. B1.1 — reframe classifier handles remote_ok / seniority / radius
+- [x] 9. B1.2 — search-params save: tweak doesn't kick pipeline
 - [ ] 10. B2.1 — unknown stage shows error + recovery link
 - [ ] 11. B2.2 — server-restart "App crashed" surfaces in UI
 - [ ] 12. B2.3 — guard `result.duration` in run_status partial
