@@ -305,10 +305,10 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 17. B4.2 — persist refresh-capped banner dismissal
 - [x] 18. B4.3 — collapse two over-budget buttons to one
 - [x] 19. B4.4 — `aria-label="Close"` on `×` buttons
-- [ ] 20. B5.1 — Test key tests stored key when field blank
-- [ ] 21. B5.2 — Clear key UI
-- [ ] 22. B5.3 — total_budget editable in advanced settings
-- [ ] 23. B5.4 — surface missing-key state in base template
+- [x] 20. B5.1 — Test key tests stored key when field blank
+- [x] 21. B5.2 — Clear key UI
+- [x] 22. B5.3 — total_budget editable in advanced settings
+- [x] 23. B5.4 — surface missing-key state in base template
 - [ ] 24. B6.1 — guard `open_tailor=1` script
 - [ ] 25. B6.2 — exact-match-first in apply_suggested_edits
 - [ ] 26. B6.3 — manual-job-add error stays in modal
