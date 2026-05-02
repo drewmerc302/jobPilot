@@ -286,8 +286,8 @@ Wave C (after B merges, 1 sonnet agent):
 
 # Master checklist (55 items)
 
-- [ ] 1. A1 — Typst binaries: ship arm64+x86_64 mac, linux, windows
-- [ ] 2. A1 — `_typst_binary` arch detection
+- [x] 1. A1 — Typst binaries: ship arm64+x86_64 mac, linux, windows
+- [x] 2. A1 — `_typst_binary` arch detection
 - [ ] 3. A2 — sanitize `job['company']` for paths
 - [ ] 4. A3 — auto-pick free port + health probe
 - [ ] 5. A4 — UTC drift in `count_runs_today`
@@ -333,8 +333,8 @@ Wave C (after B merges, 1 sonnet agent):
 - [ ] 45. C2 — Greenhouse 404 vs 5xx distinguished
 - [ ] 46. C3 — Remote-friendly warning logic
 - [ ] 47. C4 — htmx SRI + version pin
-- [ ] 48. (rolled into A1) Briefcase universal_build / dual arch
-- [ ] 49. (rolled into A1) `fetch_typst.py` cross-platform launcher
+- [x] 48. (rolled into A1) Briefcase universal_build / dual arch
+- [x] 49. (rolled into A1) `fetch_typst.py` cross-platform launcher
 - [ ] 50. (rolled into B7.3) low_confidence_fields default
 - [ ] 51. (rolled into B6.4) IPv6 link-local in safe-url
 - [ ] 52. (rolled into B5.4) banner when client is None
