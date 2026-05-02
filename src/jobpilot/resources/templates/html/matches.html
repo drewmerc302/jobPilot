@@ -8,8 +8,28 @@
   {% if refresh_capped %}
   <div class="alert alert-error" id="refresh-capped-banner" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <span>Refresh limit reached — 4 refreshes per day maximum.</span>
-    <button class="btn btn-danger btn-sm" style="margin-left:16px;white-space:nowrap" onclick="document.getElementById('refresh-capped-banner').remove()">Dismiss</button>
+    <button class="btn btn-danger btn-sm" style="margin-left:16px;white-space:nowrap"
+            onclick="(function(){var k='dismissed_refresh_capped_'+new Date().toISOString().slice(0,10);try{localStorage.setItem(k,'1');}catch(e){}document.getElementById('refresh-capped-banner').remove();})()">Dismiss</button>
   </div>
+  <script>
+    (function(){
+      var today = new Date().toISOString().slice(0,10);
+      var key = 'dismissed_refresh_capped_' + today;
+      try {
+        // Cleanup old dismiss keys (only keep today's)
+        for (var i = localStorage.length - 1; i >= 0; i--) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf('dismissed_refresh_capped_') === 0 && k !== key) {
+            localStorage.removeItem(k);
+          }
+        }
+        if (localStorage.getItem(key)) {
+          var b = document.getElementById('refresh-capped-banner');
+          if (b) b.remove();
+        }
+      } catch (e) { /* localStorage disabled */ }
+    })();
+  </script>
   {% endif %}
 
   {% if just_saved %}
@@ -23,10 +43,8 @@
   {% if spent >= budget %}
   <div class="alert alert-error" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <span>Monthly budget reached (${{ "%.2f"|format(spent) }} / ${{ "%.2f"|format(budget) }}).</span>
-    <div style="display:flex;gap:8px;margin-left:16px;flex-shrink:0">
-      <a href="/settings" class="btn btn-danger btn-sm" style="white-space:nowrap">Raise limit →</a>
-      <a href="/settings" class="btn btn-danger btn-sm" style="white-space:nowrap">Add own key →</a>
-    </div>
+    <a href="/settings#api_key" class="btn btn-danger btn-sm" style="margin-left:16px;white-space:nowrap"
+       onclick="setTimeout(function(){var el=document.getElementById('api_key');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();}},50)">Resolve →</a>
   </div>
   {% else %}
   <div class="alert alert-warning" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -43,7 +61,7 @@
     </div>
     <div>
       {% if ladder and ladder.state == "gift_exhausted" %}
-      <span class="btn btn-outline btn-sm" style="opacity:.45;cursor:not-allowed" title="Add your own key to refresh">↻ Refresh</span>
+      <button type="button" class="btn btn-outline btn-sm" disabled aria-disabled="true" style="opacity:.45;cursor:not-allowed" title="Add your own key to refresh">↻ Refresh</button>
       {% else %}
       <form method="post" action="/matches/refresh" style="display:contents">
         <button type="submit" class="btn btn-outline btn-sm" data-tooltip="Scan for new listings now. Auto-refresh runs every 12 hours." data-tip-pos="bottom">↻ Refresh</button>
@@ -188,6 +206,7 @@
   <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
     <h3 style="margin:0;font-size:16px;font-weight:700">Add a job</h3>
     <button onclick="document.getElementById('add-job-modal').close()"
+            type="button" aria-label="Close"
             style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">×</button>
   </div>
   <form method="post" action="/matches/add-job" style="padding:20px;display:flex;flex-direction:column;gap:14px"
