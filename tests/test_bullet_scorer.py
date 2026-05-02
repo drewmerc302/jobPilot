@@ -48,3 +48,49 @@ def test_score_bullets_no_experience_key():
     from jobpilot.steps.bullet_scorer import score_bullets
 
     assert score_bullets({}, None, None, None) == {}
+
+
+def test_render_bullet_analysis_all_strong():
+    from jobpilot.routes.profile import _render_bullet_analysis
+
+    profile = {
+        "experience": [
+            {
+                "company": "Acme",
+                "positions": [
+                    {
+                        "title": "SWE",
+                        "dates": "2023-present",
+                        "achievements": ["Led team of 8"],
+                    }
+                ],
+            }
+        ]
+    }
+    scores = {"0-0-0": {"rating": "strong", "note": ""}}
+    html = _render_bullet_analysis(profile, scores)
+    assert "strong" in html.lower() or "✓" in html
+
+
+def test_render_bullet_analysis_shows_weak_bullets():
+    from jobpilot.routes.profile import _render_bullet_analysis
+
+    profile = {
+        "experience": [
+            {
+                "company": "Acme",
+                "positions": [
+                    {
+                        "title": "SWE",
+                        "dates": "2023-present",
+                        "achievements": ["Helped the team ship features"],
+                    }
+                ],
+            }
+        ]
+    }
+    scores = {"0-0-0": {"rating": "weak_passive_verb", "note": "Avoid 'helped'"}}
+    html = _render_bullet_analysis(profile, scores)
+    assert "Improve" in html
+    # Apostrophe in bullet text must not break the hx-vals attribute (double-quoted)
+    assert "'" not in html.split('hx-vals="')[1].split('"')[0]

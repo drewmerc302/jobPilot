@@ -1,6 +1,7 @@
 """Resume profile editor — view and update the stored profile.json."""
 
 import asyncio
+import html as _html
 import json
 import logging
 
@@ -132,6 +133,110 @@ def _parse_education_from_form(form) -> list[dict]:
     return education
 
 
+_RATING_LABELS = {
+    "strong": ("✓", "var(--green)", "Strong"),
+    "weak_no_metric": ("⚠", "#d97706", "No metric"),
+    "weak_no_outcome": ("⚠", "#d97706", "No outcome"),
+    "weak_passive_verb": ("⚠", "#d97706", "Passive verb"),
+    "vague": ("⚠", "#9333ea", "Vague"),
+}
+
+
+def _render_bullet_analysis(profile: dict, scores: dict) -> str:
+    """Render the bullet analysis panel HTML."""
+    if not scores:
+        return "<p class='muted' style='font-size:13px;padding:8px 0'>No bullets to score.</p>"
+
+    weak_bullets = [
+        (key, data) for key, data in scores.items() if data["rating"] != "strong"
+    ]
+    strong_count = sum(1 for d in scores.values() if d["rating"] == "strong")
+    total = len(scores)
+
+    if not weak_bullets:
+        return (
+            f"<div style='color:var(--green);font-size:13px;padding:8px 0'>"
+            f"✓ All {total} bullets look strong.</div>"
+        )
+
+    # Build lookup: key → bullet text + context
+    bullet_lookup: dict[str, dict] = {}
+    for exp_idx, exp in enumerate(profile.get("experience") or []):
+        for pos_idx, pos in enumerate(exp.get("positions") or []):
+            for bullet_idx, bullet in enumerate(pos.get("achievements") or []):
+                key = f"{exp_idx}-{pos_idx}-{bullet_idx}"
+                bullet_lookup[key] = {
+                    "text": bullet.strip(),
+                    "context": f"{exp.get('company', '')} — {pos.get('title', '')}",
+                    "exp_idx": exp_idx,
+                    "pos_idx": pos_idx,
+                    "bullet_idx": bullet_idx,
+                }
+
+    rows = []
+    for key, score_data in weak_bullets:
+        info = bullet_lookup.get(key)
+        if not info:
+            continue
+        rating = score_data["rating"]
+        note = score_data.get("note", "")
+        icon, color, label = _RATING_LABELS.get(rating, ("⚠", "#d97706", rating))
+        safe_text = _html.escape(info["text"])
+        safe_context = _html.escape(info["context"])
+        safe_note = _html.escape(note)
+        ei, pi, bi = info["exp_idx"], info["pos_idx"], info["bullet_idx"]
+        ta_name = f"exp_{ei}_pos_{pi}_achievements"
+        improve_target = f"improve-slot-{key.replace('-', '_')}"
+
+        # Build hx-vals as proper JSON, then html-escape so it survives any
+        # special chars (apostrophes, quotes) in bullet text or ta_name.
+        hx_vals = _html.escape(
+            json.dumps(
+                {
+                    "exp_idx": str(ei),
+                    "pos_idx": str(pi),
+                    "bullet_idx": str(bi),
+                    "bullet_text": info["text"],
+                    "rating": rating,
+                    "ta_name": ta_name,
+                }
+            ),
+            quote=True,
+        )
+
+        rows.append(f"""
+<div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px">
+  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">{safe_context}</div>
+  <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+    <span style="color:{color};font-weight:700;flex-shrink:0">{icon}</span>
+    <span style="font-size:13px;line-height:1.5">{safe_text}</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="font-size:11px;color:{color};font-weight:600;background:{color}18;padding:2px 7px;border-radius:10px">{label}</span>
+    {f'<span class="muted" style="font-size:11px">{safe_note}</span>' if note else ""}
+    <button type="button" class="btn btn-outline btn-sm"
+            style="margin-left:auto"
+            hx-post="/profile/improve-bullet"
+            hx-target="#{_html.escape(improve_target)}"
+            hx-swap="innerHTML"
+            hx-vals="{hx_vals}"
+            onclick="this.disabled=true;this.textContent='Loading…'"
+            hx-on::after-request="this.disabled=false;this.textContent='✦ Improve'">
+      ✦ Improve
+    </button>
+  </div>
+  <div id="{_html.escape(improve_target)}"></div>
+</div>""")
+
+    header = (
+        f"<div style='font-size:13px;margin-bottom:12px'>"
+        f"<strong>{len(weak_bullets)}</strong> of {total} bullets need work &nbsp;·&nbsp; "
+        f"<span style='color:var(--green)'>{strong_count} strong</span>"
+        f"</div>"
+    )
+    return header + "\n".join(rows)
+
+
 # ---------------------------------------------------------------------------
 # LLM calls (sync, run in thread)
 # ---------------------------------------------------------------------------
@@ -211,6 +316,11 @@ def _llm_parse_experience(
 @router.get("/profile", response_class=HTMLResponse)
 async def profile_get(request: Request) -> HTMLResponse:
     profile = request.app.state.profile_store.load() or {}
+    bullet_analysis_html = ""
+    if profile.get("bullet_scores") is not None:
+        bullet_analysis_html = _render_bullet_analysis(
+            profile, profile["bullet_scores"]
+        )
     return request.app.state.templates.TemplateResponse(
         request,
         "profile_edit.html",
@@ -218,6 +328,7 @@ async def profile_get(request: Request) -> HTMLResponse:
             "profile": profile,
             "skills_text": _skills_to_text(profile.get("skills") or {}),
             "saved": request.query_params.get("saved") == "1",
+            "bullet_analysis_html": bullet_analysis_html,
         },
     )
 
@@ -262,6 +373,9 @@ async def profile_save(request: Request):
             logger.warning(f"New experience parse failed: {exc}")
 
     profile["experience"] = experience
+    profile.pop(
+        "bullet_scores", None
+    )  # scores are positional; stale after any experience edit
     # B7.1: only overwrite education when the form posted at least one
     # institution. Otherwise the user opened the page without touching
     # the section and we'd silently nuke their stored entries.
@@ -301,8 +415,6 @@ async def suggest_summary(request: Request) -> HTMLResponse:
             "<p class='muted' style='font-size:13px;margin:4px 0 0'>Suggestion failed — please try again.</p>"
         )
 
-    import html as _html
-
     safe_html = _html.escape(suggested)
     js_str = json.dumps(suggested)  # valid JS string literal, properly escaped
     return HTMLResponse(f"""
@@ -319,6 +431,37 @@ async def suggest_summary(request: Request) -> HTMLResponse:
   </button>
 </div>
 """)
+
+
+@router.post("/profile/score-bullets", response_class=HTMLResponse)
+async def score_bullets_route(request: Request) -> HTMLResponse:
+    from jobpilot.steps.bullet_scorer import score_bullets
+
+    profile_store = request.app.state.profile_store
+    profile = profile_store.load() or {}
+
+    if not profile.get("experience"):
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>No experience entries to analyze.</p>"
+        )
+
+    try:
+        scores = await asyncio.to_thread(
+            score_bullets,
+            profile,
+            request.app.state.client,
+            request.app.state.config,
+            request.app.state.db,
+        )
+    except Exception as exc:
+        logger.warning(f"Bullet scoring failed: {exc}")
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>Scoring failed — please try again.</p>"
+        )
+
+    profile["bullet_scores"] = scores
+    profile_store.save(profile)
+    return HTMLResponse(_render_bullet_analysis(profile, scores))
 
 
 @router.get("/profile/generate-pdf")
