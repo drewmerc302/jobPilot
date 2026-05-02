@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}jobPilot{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
-  <script src="/static/htmx.min.js"></script>
+  {# htmx 2.0.4 — vendored at src/jobpilot/resources/static/htmx.min.js.
+     Update fetch_typst.sh-style refresh + recompute SRI when bumping. #}
+  <script src="/static/htmx.min.js"
+          integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+          crossorigin="anonymous"></script>
 </head>
 <body>
   <nav class="nav">
