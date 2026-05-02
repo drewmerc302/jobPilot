@@ -202,6 +202,30 @@ async def step2_post(request: Request) -> HTMLResponse:
     profile["low_confidence_fields"] = []
     profile_store.save_draft(profile)
     profile_store.commit_draft()
+
+    async def _bg_score(app_state, committed_profile: dict) -> None:
+        try:
+            from jobpilot.steps.bullet_scorer import score_bullets
+
+            scores = await asyncio.to_thread(
+                score_bullets,
+                committed_profile,
+                app_state.client,
+                app_state.config,
+                app_state.db,
+            )
+            if scores:
+                fresh = app_state.profile_store.load() or {}
+                fresh["bullet_scores"] = scores
+                app_state.profile_store.save(fresh)
+        except Exception as exc:
+            logger.warning(f"Background bullet scoring failed: {exc}")
+
+    _bg_task = asyncio.create_task(_bg_score(request.app.state, profile))
+    background_tasks = request.app.state.background_tasks
+    background_tasks.add(_bg_task)
+    _bg_task.add_done_callback(background_tasks.discard)
+
     return RedirectResponse("/wizard/step/3", status_code=303)
 
 
