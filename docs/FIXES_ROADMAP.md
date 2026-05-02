@@ -330,7 +330,7 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 42. B8.11 — `?` overlay focus trap (use `<dialog>`)
 - [x] 43. B8.12 — drop redundant `D` shortcut
 - [x] 44. C1 — pricing table extended + alias-strip
-- [ ] 45. C2 — Greenhouse 404 vs 5xx distinguished
+- [x] 45. C2 — Greenhouse 404 vs 5xx distinguished
 - [ ] 46. C3 — Remote-friendly warning logic
 - [ ] 47. C4 — htmx SRI + version pin
 - [x] 48. (rolled into A1) Briefcase universal_build / dual arch
