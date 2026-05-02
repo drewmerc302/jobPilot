@@ -120,7 +120,21 @@
 
     {# ── Experience ── #}
     <div class="card" style="padding:20px;margin-bottom:16px">
-      <h3 style="margin:0 0 16px;font-size:15px">Experience</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h3 style="margin:0;font-size:15px">Experience</h3>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button type="button" class="btn btn-outline btn-sm"
+                  hx-post="/profile/score-bullets"
+                  hx-target="#bullet-analysis-panel"
+                  hx-swap="innerHTML"
+                  onclick="this.disabled=true;this.querySelector('.btn-label').textContent='Analyzing…';this.querySelector('.spin-icon').style.display='inline-block'"
+                  hx-on::after-request="this.disabled=false;this.querySelector('.btn-label').textContent='✦ Analyze bullets';this.querySelector('.spin-icon').style.display='none'"
+                  data-tooltip="Scores every achievement bullet for quality — flags weak verbs, missing metrics, vague outcomes. ~$0.02.">
+            <span class="spin-icon" style="display:none;width:12px;height:12px;border:2px solid #aaa;border-top-color:#555;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px"></span><span class="btn-label">✦ Analyze bullets</span>
+          </button>
+          <span class="muted" style="font-size:11px">~$0.02 · 10–15 s</span>
+        </div>
+      </div>
 
       {% for exp in (profile.experience or []) %}
       {% set exp_idx = loop.index0 %}
@@ -167,6 +181,12 @@
 
       </div>
       {% endfor %}
+    </div>
+
+    <div id="bullet-analysis-panel" style="margin-bottom:16px">
+      {% if bullet_analysis_html is defined and bullet_analysis_html %}
+      {{ bullet_analysis_html | safe }}
+      {% endif %}
     </div>
 
     {# ── Education ── #}
