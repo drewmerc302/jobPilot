@@ -301,10 +301,10 @@ Wave C (after B merges, 1 sonnet agent):
 - [x] 13. B3.1 — undo dismiss with toast + route
 - [x] 14. B3.2 — withdrawn badge distinct color
 - [x] 15. B3.3 — capitalize status options for display
-- [ ] 16. B4.1 — disabled refresh = `<button disabled>` not `<span>`
-- [ ] 17. B4.2 — persist refresh-capped banner dismissal
-- [ ] 18. B4.3 — collapse two over-budget buttons to one
-- [ ] 19. B4.4 — `aria-label="Close"` on `×` buttons
+- [x] 16. B4.1 — disabled refresh = `<button disabled>` not `<span>`
+- [x] 17. B4.2 — persist refresh-capped banner dismissal
+- [x] 18. B4.3 — collapse two over-budget buttons to one
+- [x] 19. B4.4 — `aria-label="Close"` on `×` buttons
 - [ ] 20. B5.1 — Test key tests stored key when field blank
 - [ ] 21. B5.2 — Clear key UI
 - [ ] 22. B5.3 — total_budget editable in advanced settings
