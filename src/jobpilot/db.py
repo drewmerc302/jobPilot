@@ -598,19 +598,13 @@ class Database:
         ).fetchone()
         return row["total"] or 0.0
 
-    def count_runs_today(self) -> int:
-        # User-visible cap: only count manual (non-auto) runs so a midnight
-        # auto-refresh doesn't silently consume the user's daily budget.
-        # Local-time comparison so the cap resets at the user's midnight.
-        row = self._conn.execute(
-            "SELECT COUNT(*) AS cnt FROM runs "
-            "WHERE date(started_at, 'localtime') = date('now', 'localtime') "
-            "AND auto = 0"
-        ).fetchone()
-        return row["cnt"] or 0
-
     def count_runs_today_total(self) -> int:
-        """Count every run (manual + auto) started today, local time."""
+        """Count every run (manual + auto) started today, local time.
+
+        Both auto-refresh and manual refresh share the same daily ceiling
+        so the user's API spend can't exceed `max_runs_per_day` regardless
+        of how the runs were initiated.
+        """
         row = self._conn.execute(
             "SELECT COUNT(*) AS cnt FROM runs "
             "WHERE date(started_at, 'localtime') = date('now', 'localtime')"

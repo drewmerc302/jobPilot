@@ -1,5 +1,6 @@
 """Polling and utility API endpoints (HTMX fragments only — no JSON)."""
 
+import html
 import json
 import logging
 
@@ -138,4 +139,4 @@ async def test_key(request: Request, api_key: str = Form(default="")) -> HTMLRes
         return HTMLResponse("<span class='error'>✗ Invalid key</span>")
     except Exception as exc:
         logger.warning(f"test-key failed: {exc}")
-        return HTMLResponse(f"<span class='error'>✗ {exc}</span>")
+        return HTMLResponse(f"<span class='error'>✗ {html.escape(str(exc))}</span>")

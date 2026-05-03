@@ -74,26 +74,8 @@ async def settings_post(
 async def settings_clear_key(request: Request) -> RedirectResponse:
     """Wipe the saved Anthropic key and revert to gift-credit mode."""
     config = request.app.state.config
-    overrides_path = config.data_dir / "config_overrides.json"
-    existing: dict = {}
-    if overrides_path.exists():
-        try:
-            import json as _json
-
-            existing = _json.loads(overrides_path.read_text())
-        except Exception:
-            existing = {}
-    existing["anthropic_api_key"] = ""
-    existing["has_byo_key"] = False
-    tmp = overrides_path.with_suffix(".tmp")
-    tmp.parent.mkdir(parents=True, exist_ok=True)
-    import json as _json
-
-    tmp.write_text(_json.dumps(existing, ensure_ascii=False, indent=2))
-    tmp.replace(overrides_path)
-
+    config.save_overrides(anthropic_api_key="", has_byo_key=False)
     config.anthropic_api_key = ""
     config.has_byo_key = False
     request.app.state.client = None
-
     return RedirectResponse("/settings?cleared=1", status_code=303)

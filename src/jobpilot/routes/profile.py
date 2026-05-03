@@ -378,12 +378,12 @@ async def profile_save(request: Request):
         profile.pop(
             "bullet_scores", None
         )  # positional keys stale when experience changes
-    # B7.1: only overwrite education when the form posted at least one
-    # institution. Otherwise the user opened the page without touching
-    # the section and we'd silently nuke their stored entries.
-    parsed_education = _parse_education_from_form(form)
-    if parsed_education:
-        profile["education"] = parsed_education
+    # The form always posts education_present=1 from profile_edit.html,
+    # so an empty parse means the user deliberately removed every row.
+    # Trust the sentinel; only preserve old data when the form didn't
+    # render the section at all.
+    if form.get("education_present") == "1":
+        profile["education"] = _parse_education_from_form(form)
     elif "education" not in profile:
         profile["education"] = []
     profile["low_confidence_fields"] = []

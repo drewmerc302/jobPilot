@@ -345,7 +345,7 @@ async def step4_get(request: Request) -> HTMLResponse:
     config = request.app.state.config
     if compute_ladder(config, db)["state"] == "gift_exhausted":
         return RedirectResponse("/settings?key_exhausted=1", status_code=303)
-    if db.count_runs_today() >= config.max_runs_per_day:
+    if db.count_runs_today_total() >= config.max_runs_per_day:
         return RedirectResponse("/matches?refresh_capped=1", status_code=303)
     client = request.app.state.client
     run_status = request.app.state.run_status

@@ -6,6 +6,7 @@ import ipaddress
 import json
 import logging
 import re
+import socket
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
@@ -38,9 +39,25 @@ def _is_safe_url(url: str) -> bool:
         host = p.hostname
         if not host:
             return False
-        # IPv6 addresses come from urlparse with surrounding brackets stripped.
+        if (
+            host in ("localhost",)
+            or host.endswith(".local")
+            or host.endswith(".internal")
+        ):
+            return False
+        # Resolve host to every address family it advertises and reject if any
+        # resolves into a private/loopback/link-local/reserved range. Catches
+        # the case where a public hostname points at an internal IP.
         try:
-            addr = ipaddress.ip_address(host)
+            infos = socket.getaddrinfo(host, None)
+        except (socket.gaierror, UnicodeError):
+            return False
+        for _family, _type, _proto, _canon, sockaddr in infos:
+            ip_str = sockaddr[0]
+            try:
+                addr = ipaddress.ip_address(ip_str)
+            except ValueError:
+                return False
             if (
                 addr.is_private
                 or addr.is_loopback
@@ -48,13 +65,6 @@ def _is_safe_url(url: str) -> bool:
                 or addr.is_reserved
                 or addr.is_unspecified
                 or addr.is_multicast
-            ):
-                return False
-        except ValueError:
-            if (
-                host in ("localhost",)
-                or host.endswith(".local")
-                or host.endswith(".internal")
             ):
                 return False
         return True
@@ -110,7 +120,7 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
         )
     if compute_ladder(config, db)["state"] == "gift_exhausted":
         return RedirectResponse("/settings?key_exhausted=1", status_code=303)
-    if db.count_runs_today() >= config.max_runs_per_day:
+    if db.count_runs_today_total() >= config.max_runs_per_day:
         return RedirectResponse("/matches?refresh_capped=1", status_code=303)
 
     client = request.app.state.client

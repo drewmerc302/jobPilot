@@ -204,6 +204,8 @@
     {# ── Education ── #}
     <div class="card" style="padding:20px;margin-bottom:16px" id="education-card">
       <h3 style="margin:0 0 14px;font-size:15px">Education</h3>
+      <input type="hidden" name="education_present" value="1">
+
       {% set edu_list = profile.education or [{}] %}
       {% for edu in edu_list %}
       {% set edu_idx = loop.index0 %}
