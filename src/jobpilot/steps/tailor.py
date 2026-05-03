@@ -311,7 +311,7 @@ def generate_resume_pdf(
     local_template = output_dir / "resume.typ"
     pdf_path = output_dir / "resume.pdf"
 
-    with open(yaml_path, "w") as f:
+    with open(yaml_path, "w", encoding="utf-8") as f:
         yaml.dump(resume_data, f, default_flow_style=False, allow_unicode=True)
 
     typst_bin = _typst_binary(config)
@@ -342,6 +342,8 @@ def generate_resume_pdf(
             check=True,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(output_dir),
         )
         return pdf_path

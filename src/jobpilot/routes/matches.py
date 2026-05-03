@@ -217,7 +217,9 @@ async def job_detail(job_id: str, request: Request) -> HTMLResponse:
     prep_result = None
     if match and match.get("interview_prep_path"):
         try:
-            prep_result = json.loads(Path(match["interview_prep_path"]).read_text())
+            prep_result = json.loads(
+                Path(match["interview_prep_path"]).read_text(encoding="utf-8")
+            )
         except Exception:
             pass
 
@@ -529,7 +531,9 @@ async def interview_prep_match(job_id: str, request: Request) -> HTMLResponse:
         output_dir = config.output_dir / job_id
         output_dir.mkdir(parents=True, exist_ok=True)
         prep_path = output_dir / "interview_prep.json"
-        prep_path.write_text(json.dumps(prep_result, ensure_ascii=False, indent=2))
+        prep_path.write_text(
+            json.dumps(prep_result, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         db.update_match_paths(job_id, interview_prep_path=str(prep_path))
         return templates.TemplateResponse(
             request,

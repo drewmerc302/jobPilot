@@ -214,7 +214,7 @@ def _pick_port(start: int = DEFAULT_PORT, attempts: int = 20) -> int:
 def _save_runtime_port(port: int) -> None:
     try:
         RUNTIME_PATH.parent.mkdir(parents=True, exist_ok=True)
-        RUNTIME_PATH.write_text(json.dumps({"port": port}))
+        RUNTIME_PATH.write_text(json.dumps({"port": port}), encoding="utf-8")
     except OSError as exc:
         logger.warning(f"Could not persist runtime port: {exc}")
 

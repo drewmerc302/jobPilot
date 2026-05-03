@@ -14,23 +14,27 @@ class ProfileStore:
     def load(self) -> dict | None:
         if not self._path.exists():
             return None
-        return json.loads(self._path.read_text())
+        return json.loads(self._path.read_text(encoding="utf-8"))
 
     def save(self, profile: dict) -> None:
         self._dir.mkdir(parents=True, exist_ok=True)
         tmp = self._path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(profile, ensure_ascii=False, indent=2))
+        tmp.write_text(
+            json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         tmp.replace(self._path)
 
     def load_draft(self) -> dict | None:
         if not self._draft.exists():
             return None
-        return json.loads(self._draft.read_text())
+        return json.loads(self._draft.read_text(encoding="utf-8"))
 
     def save_draft(self, profile: dict) -> None:
         self._dir.mkdir(parents=True, exist_ok=True)
         tmp = self._draft.with_suffix(".tmp")
-        tmp.write_text(json.dumps(profile, ensure_ascii=False, indent=2))
+        tmp.write_text(
+            json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         tmp.replace(self._draft)
 
     def commit_draft(self) -> None:
@@ -53,14 +57,15 @@ class SearchParamsStore:
     def load(self) -> SearchParams | None:
         if not self._path.exists():
             return None
-        d = json.loads(self._path.read_text())
+        d = json.loads(self._path.read_text(encoding="utf-8"))
         return SearchParams(**d)
 
     def save(self, params: SearchParams) -> None:
         self._dir.mkdir(parents=True, exist_ok=True)
         tmp = self._path.with_suffix(".tmp")
         tmp.write_text(
-            json.dumps(dataclasses.asdict(params), ensure_ascii=False, indent=2)
+            json.dumps(dataclasses.asdict(params), ensure_ascii=False, indent=2),
+            encoding="utf-8",
         )
         tmp.replace(self._path)
 

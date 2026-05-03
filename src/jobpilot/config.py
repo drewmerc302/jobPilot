@@ -44,7 +44,7 @@ class Config:
         overrides_path = self.data_dir / "config_overrides.json"
         if overrides_path.exists():
             try:
-                overrides = json.loads(overrides_path.read_text())
+                overrides = json.loads(overrides_path.read_text(encoding="utf-8"))
                 if "anthropic_api_key" in overrides:
                     self.anthropic_api_key = overrides["anthropic_api_key"]
                 if "monthly_budget" in overrides:
@@ -62,10 +62,12 @@ class Config:
         existing: dict = {}
         if overrides_path.exists():
             try:
-                existing = json.loads(overrides_path.read_text())
+                existing = json.loads(overrides_path.read_text(encoding="utf-8"))
             except Exception:
                 pass
         existing.update({k: v for k, v in kwargs.items() if v is not None})
         tmp = overrides_path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(existing, ensure_ascii=False, indent=2))
+        tmp.write_text(
+            json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         tmp.replace(overrides_path)
