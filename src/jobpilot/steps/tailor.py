@@ -3,6 +3,7 @@ import json
 import logging
 import platform
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -306,7 +307,8 @@ def generate_resume_pdf(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     yaml_path = output_dir / "resume.yaml"
-    template_path = config.template_dir / "resume.typ"
+    src_template = config.template_dir / "resume.typ"
+    local_template = output_dir / "resume.typ"
     pdf_path = output_dir / "resume.pdf"
 
     with open(yaml_path, "w") as f:
@@ -316,25 +318,31 @@ def generate_resume_pdf(
     if not typst_bin.exists():
         logger.error(f"Typst binary not found at {typst_bin}")
         return None
-    if not template_path.exists():
-        logger.error(f"Resume template not found at {template_path}")
+    if not src_template.exists():
+        logger.error(f"Resume template not found at {src_template}")
         return None
+
+    # Copy template alongside YAML so --root can be the job dir. Typst sandboxes
+    # file reads to --root; without this, an absolute YAML path under ~/.jobpilot
+    # is rejected when --root points at the package resources dir.
+    shutil.copyfile(src_template, local_template)
 
     try:
         subprocess.run(
             [
                 str(typst_bin),
                 "compile",
-                str(template_path),
-                str(pdf_path),
+                "resume.typ",
+                "resume.pdf",
                 "--input",
-                f"resume={yaml_path}",
+                "resume=resume.yaml",
                 "--root",
-                str(template_path.parent),
+                str(output_dir),
             ],
             check=True,
             capture_output=True,
             text=True,
+            cwd=str(output_dir),
         )
         return pdf_path
     except subprocess.CalledProcessError as e:

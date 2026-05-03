@@ -62,13 +62,13 @@ async def lifespan(app: FastAPI):
 
     app.state.config = config
     app.state.db = db
-    if not (config.anthropic_api_key or "").strip() and config.has_byo_key:
-        # B5.4: BYO mode but no key persisted — bail on building the SDK client
-        # so routes can render a "Add your key" banner instead of an opaque
-        # 401 from anthropic on first call.
+    if not (config.anthropic_api_key or "").strip():
+        # No key — defer client construction so routes can render a clear
+        # "Add your key" message instead of a confusing SDK auth-resolution
+        # error on the first request.
         logger.warning(
-            "BYO key mode active but anthropic_api_key is empty; "
-            "delaying client construction until a key is saved."
+            "anthropic_api_key is empty; delaying client construction "
+            "until a key is saved."
         )
         app.state.client = None
     else:

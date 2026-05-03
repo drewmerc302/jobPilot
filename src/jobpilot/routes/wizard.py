@@ -136,6 +136,19 @@ async def step1_post(
             {"step": 1, "error": "Please upload a PDF or DOCX file."},
         )
 
+    if request.app.state.client is None:
+        return templates.TemplateResponse(
+            request,
+            "wizard.html",
+            {
+                "step": 1,
+                "error": (
+                    "Add your Anthropic API key in Settings before importing "
+                    "your resume."
+                ),
+            },
+        )
+
     try:
         profile = await asyncio.to_thread(
             extract_resume,
