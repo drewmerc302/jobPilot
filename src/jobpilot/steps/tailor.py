@@ -25,11 +25,19 @@ ANALYSIS_TOOL = {
         "properties": {
             "reordered_bullets": {
                 "type": "object",
-                "description": "Map of 'Company - Title' to reordered bullet list",
-                "additionalProperties": {"type": "array", "items": {"type": "string"}},
+                "description": (
+                    "Map of 'Company - Title' to list of 0-based bullet "
+                    "indices in relevance order. Only include the 1-2 most "
+                    "recent positions where reordering would help."
+                ),
+                "additionalProperties": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                },
             },
             "suggested_edits": {
                 "type": "array",
+                "description": "Up to 10 most impactful wording changes",
                 "items": {
                     "type": "object",
                     "properties": {
@@ -43,17 +51,12 @@ ANALYSIS_TOOL = {
             "keyword_gaps": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "Keywords in the JD missing from the resume",
+                "description": "Top 5-10 keywords in the JD missing from the resume",
             },
             "key_requirements": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "Top requirements from the job description",
-            },
-            "interview_talking_points": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "What the candidate should emphasize in interviews",
+                "description": "Top 5 requirements from the job description",
             },
         },
         "required": [
@@ -61,7 +64,6 @@ ANALYSIS_TOOL = {
             "suggested_edits",
             "keyword_gaps",
             "key_requirements",
-            "interview_talking_points",
         ],
     },
 }
@@ -109,11 +111,19 @@ def reorder_resume_yaml(resume_data: dict, reorder_map: dict) -> dict:
         for pos in exp.get("positions", []):
             key = f"{exp.get('company', '')} - {pos.get('title', '')}"
             if key in reorder_map:
-                new_order = reorder_map[key]
+                indices = reorder_map[key]
                 existing = pos.get("achievements", [])
-                reordered = [b for b in new_order if b in existing]
-                remaining = [b for b in existing if b not in reordered]
-                pos["achievements"] = reordered + remaining
+                if not indices or not existing:
+                    continue
+                if all(isinstance(i, int) for i in indices):
+                    valid = [i for i in indices if 0 <= i < len(existing)]
+                    seen = set(valid)
+                    remaining = [i for i in range(len(existing)) if i not in seen]
+                    pos["achievements"] = [existing[i] for i in valid + remaining]
+                else:
+                    reordered = [b for b in indices if b in existing]
+                    remaining = [b for b in existing if b not in reordered]
+                    pos["achievements"] = reordered + remaining
     return result
 
 
@@ -262,7 +272,7 @@ def ensure_analysis(
     match = db.get_match(job["id"])
     existing = json.loads(match.get("suggestions") or "{}") if match else {}
 
-    if existing.get("suggested_edits") and not force:
+    if existing.get("suggested_edits") is not None and not force:
         existing.setdefault("reordered_bullets", {})
         return existing
 
@@ -271,7 +281,12 @@ def ensure_analysis(
         return existing
 
     try:
-        resume_yaml_str = yaml.dump(resume_data, default_flow_style=False)
+        llm_keys = {
+            k: v
+            for k, v in resume_data.items()
+            if k not in ("bullet_scores", "low_confidence_fields")
+        }
+        resume_yaml_str = yaml.dump(llm_keys, default_flow_style=False)
         analysis = llm_resume_analysis(
             resume_yaml_str,
             job["description"],
@@ -282,7 +297,10 @@ def ensure_analysis(
         )
     except Exception:
         logger.warning(f"LLM analysis failed for {job['id']}, using cached suggestions")
+        existing.setdefault("suggested_edits", [])
+        existing.setdefault("keyword_gaps", [])
         existing.setdefault("reordered_bullets", {})
+        db.update_match_suggestions(job["id"], json.dumps(existing))
         return existing
 
     merged = {
@@ -290,20 +308,21 @@ def ensure_analysis(
         "keyword_gaps": analysis.get("keyword_gaps", []),
         "key_requirements": analysis.get("key_requirements", [])
         or existing.get("key_requirements", []),
-        "interview_talking_points": analysis.get("interview_talking_points", [])
-        or existing.get("interview_talking_points", []),
+        "interview_talking_points": existing.get("interview_talking_points", []),
     }
     db.update_match_suggestions(job["id"], json.dumps(merged))
 
     return {**merged, "reordered_bullets": analysis.get("reordered_bullets", {})}
 
 
-def generate_resume_pdf(
-    resume_data: dict, output_dir: Path, config: Config
-) -> Path | None:
+class PdfGenerationError(RuntimeError):
+    """Raised when resume PDF compilation fails."""
+
+
+def generate_resume_pdf(resume_data: dict, output_dir: Path, config: Config) -> Path:
     """Compile resume YAML → PDF via bundled Typst binary.
 
-    resume_data is passed explicitly — storage location is a Phase 2 concern.
+    Raises PdfGenerationError with a user-readable reason on failure.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     yaml_path = output_dir / "resume.yaml"
@@ -316,15 +335,10 @@ def generate_resume_pdf(
 
     typst_bin = _typst_binary(config)
     if not typst_bin.exists():
-        logger.error(f"Typst binary not found at {typst_bin}")
-        return None
+        raise PdfGenerationError(f"Typst binary not found at {typst_bin}")
     if not src_template.exists():
-        logger.error(f"Resume template not found at {src_template}")
-        return None
+        raise PdfGenerationError(f"Resume template not found at {src_template}")
 
-    # Copy template alongside YAML so --root can be the job dir. Typst sandboxes
-    # file reads to --root; without this, an absolute YAML path under ~/.jobpilot
-    # is rejected when --root points at the package resources dir.
     shutil.copyfile(src_template, local_template)
 
     try:
@@ -348,8 +362,7 @@ def generate_resume_pdf(
         )
         return pdf_path
     except subprocess.CalledProcessError as e:
-        logger.error(f"Resume PDF generation failed: {e.stderr}")
-        return None
+        raise PdfGenerationError(f"Typst compile failed: {e.stderr}") from e
 
 
 def run_tailor_for_job(
@@ -367,7 +380,12 @@ def run_tailor_for_job(
     safe_company = _safe_dirname(job.get("company", ""))
     safe_job_id = _safe_dirname(job["id"].replace(":", "_"))
     job_dir = output_dir / f"{safe_company}_{safe_job_id}"
-    tailored = reorder_resume_yaml(resume_data, analysis.get("reordered_bullets", {}))
+    clean_resume = {
+        k: v
+        for k, v in resume_data.items()
+        if k not in ("bullet_scores", "low_confidence_fields")
+    }
+    tailored = reorder_resume_yaml(clean_resume, analysis.get("reordered_bullets", {}))
 
     if adopt_edits:
         edits = analysis.get("suggested_edits", [])

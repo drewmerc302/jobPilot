@@ -13,6 +13,9 @@
       {% if saved %}
       <span style="color:var(--green);font-size:13px;font-weight:600">✓ Saved</span>
       {% endif %}
+      <button type="button" class="btn btn-outline btn-sm"
+              onclick="document.getElementById('reupload-modal').showModal()"
+              data-tooltip="Replace your resume by uploading a new PDF or DOCX. Current data will be overwritten.">↑ Upload New Resume</button>
       <a href="/profile/generate-pdf" target="_blank" class="btn btn-outline btn-sm"
          data-tooltip="Generates a PDF from your saved profile data — save changes first.">↓ Download PDF</a>
       <button form="profile-form" type="submit" class="btn btn-primary btn-sm">Save changes</button>
@@ -20,12 +23,12 @@
   </div>
 
   {% if bullet_analysis_html is defined and bullet_analysis_html %}
-  <a href="#bullet-analysis-panel" style="display:flex;align-items:center;gap:8px;background:#f0f7ff;border:1px solid #b8d4f0;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:600;color:#1d4ed8;text-decoration:none">
+  <a id="bullet-banner" href="#bullet-analysis-panel" style="display:flex;align-items:center;gap:8px;background:#f0f7ff;border:1px solid #b8d4f0;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:600;color:#1d4ed8;text-decoration:none">
     <span>✦ Bullet quality results ready</span>
     <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--muted)">jump to analysis ↓</span>
   </a>
   {% else %}
-  <a href="#experience-section" style="display:flex;align-items:center;gap:8px;background:var(--bg-2,#f9f9f9);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--muted);text-decoration:none">
+  <a id="bullet-banner" href="#experience-section" style="display:flex;align-items:center;gap:8px;background:var(--bg-2,#f9f9f9);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--muted);text-decoration:none">
     <span>✦ Analyze your resume bullets for quality — flag weak verbs, missing metrics &amp; vague outcomes</span>
     <span style="margin-left:auto;white-space:nowrap;font-size:11px">go to Analyze ↓</span>
   </a>
@@ -140,7 +143,7 @@
                   hx-target="#bullet-analysis-panel"
                   hx-swap="innerHTML"
                   onclick="this.disabled=true;this.querySelector('.btn-label').textContent='Analyzing…';this.querySelector('.spin-icon').style.display='inline-block'"
-                  hx-on::after-request="this.disabled=false;this.querySelector('.btn-label').textContent='✦ Analyze bullets';this.querySelector('.spin-icon').style.display='none'"
+                  hx-on::after-request="this.disabled=false;this.querySelector('.btn-label').textContent='✦ Analyze bullets';this.querySelector('.spin-icon').style.display='none';var p=document.getElementById('bullet-analysis-panel');if(p.children.length)p.scrollIntoView({behavior:'smooth'});var b=document.getElementById('bullet-banner');if(b){b.href='#bullet-analysis-panel';b.style.background='#f0f7ff';b.style.borderColor='#b8d4f0';b.style.color='#1d4ed8';b.style.fontWeight='600';b.children[0].textContent='✦ Bullet quality results ready';b.children[1].textContent='jump to analysis ↓'}"
                   data-tooltip="Scores every achievement bullet for quality — flags weak verbs, missing metrics, vague outcomes. ~$0.02.">
             <span class="spin-icon" style="display:none;width:12px;height:12px;border:2px solid #aaa;border-top-color:#555;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px"></span><span class="btn-label">✦ Analyze bullets</span>
           </button>
@@ -187,7 +190,8 @@
           </label>
           <textarea name="exp_{{ exp_idx }}_pos_{{ pos_idx }}_achievements"
                     rows="{{ [6, (pos.achievements or [])|length + 1]|max }}"
-                    style="margin-top:4px;font-size:12px;line-height:1.6;resize:vertical">{{ (pos.achievements or []) | join('\n') }}</textarea>
+                    style="margin-top:4px;font-size:12px;line-height:1.8;resize:vertical;font-family:inherit">{% for b in (pos.achievements or []) %}{% if not loop.first %}
+{% endif %}• {{ b }}{% endfor %}</textarea>
         </div>
         {% endfor %}
 
@@ -240,4 +244,34 @@
 
   </form>
 </div>
+
+<dialog id="reupload-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;max-width:480px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.15)">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+    <h3 style="margin:0;font-size:16px;font-weight:700">Upload New Resume</h3>
+    <button type="button" aria-label="Close" onclick="document.getElementById('reupload-modal').close()"
+            style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">×</button>
+  </div>
+  <form action="/profile/re-upload" method="post" enctype="multipart/form-data"
+        onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.textContent='Extracting…'">
+    <div style="padding:20px">
+      <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:var(--radius);padding:12px;margin-bottom:16px;font-size:13px;color:#664d03">
+        <strong>Warning:</strong> This will replace your current resume data with a fresh extraction. Any manual edits you've made will be lost.
+      </div>
+      <input type="file" name="file" accept=".pdf,.docx" required
+             style="width:100%;font-size:13px;margin-bottom:8px">
+      <p class="muted" style="font-size:11px;margin:0">PDF or DOCX, max 5 MB · ~$0.02 extraction cost</p>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="btn btn-outline btn-sm"
+              onclick="document.getElementById('reupload-modal').close()">Cancel</button>
+      <button type="submit" class="btn btn-primary btn-sm">Replace &amp; Extract</button>
+    </div>
+  </form>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById("reupload-modal");
+  if (dlg) dlg.addEventListener("cancel", function (e) { e.preventDefault(); });
+})();
+</script>
 {% endblock %}

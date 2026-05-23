@@ -113,7 +113,7 @@
                   onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Re-analyzing…'">
               <div>
                 <button type="submit" class="btn btn-outline btn-sm" style="width:100%" data-tooltip="Re-run the analysis — useful after updating your resume or if the job posting changed.">↻ Re-analyze</button>
-                <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 in AI usage</p>
+                <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.08 per use</p>
               </div>
             </form>
             {% else %}
@@ -122,7 +122,7 @@
                   onsubmit="var b=this.querySelector('button');b.disabled=true;b.textContent='Analyzing…'">
               <div>
                 <button type="submit" class="btn btn-primary btn-sm" style="width:100%" data-tooltip="Surface key requirements, resume gaps, and interview angles for this specific role.">Analyze for this role</button>
-                <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 in AI usage</p>
+                <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.08 per use</p>
               </div>
             </form>
             {% endif %}
@@ -167,7 +167,7 @@
               <span class="htmx-indicator spinner"></span>
               {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %}
             </button>
-            <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.03 in AI usage</p>
+            <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.08 per use</p>
           </div>
           {% else %}
           <button class="btn btn-outline btn-sm" style="width:100%" disabled style="opacity:.45;cursor:not-allowed">
@@ -217,14 +217,14 @@
       <button type="submit" class="btn btn-primary btn-sm" style="width:100%">
         Save &amp; analyze
       </button>
-      <p class="muted" style="font-size:11px;margin:4px 0 0;text-align:center">~$0.03 in AI usage</p>
+      <p class="muted" style="font-size:11px;margin:4px 0 0;text-align:center">~$0.08 per use</p>
     </form>
   </div>
 </dialog>
 <script>
 (function () {
   var dlg = document.getElementById("description-modal");
-  if (dlg) dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+  if (dlg) dlg.addEventListener("cancel", function (e) { e.preventDefault(); });
 })();
 </script>
 {% endif %}
@@ -248,7 +248,7 @@
       <div style="padding:40px 20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
         <div style="width:24px;height:24px;border:3px solid #ccc;border-top-color:#555;border-radius:50%;animation:spin .7s linear infinite"></div>
         <p style="margin:0;color:var(--muted);font-size:14px">Analyzing resume against this role…</p>
-        <p style="margin:0;color:var(--muted);font-size:12px">~$0.03 in AI usage · 20–40 seconds</p>
+        <p style="margin:0;color:var(--muted);font-size:12px">~$0.08 per use · up to 90 seconds</p>
       </div>
       <div style="padding:12px 20px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;display:flex;gap:8px;align-items:center">
         <button type="button" class="btn btn-outline btn-sm"
@@ -343,7 +343,7 @@
 <script>
 (function () {
   var dlg = document.getElementById("tailor-modal");
-  if (dlg) dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+  if (dlg) dlg.addEventListener("cancel", function (e) { e.preventDefault(); });
   var slot = document.getElementById("detail-tailor-slot");
   if (slot) slot.addEventListener("htmx:afterSwap", function () {
     if (dlg) dlg.close();

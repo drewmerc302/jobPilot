@@ -73,7 +73,7 @@ async def lifespan(app: FastAPI):
         app.state.client = None
     else:
         app.state.client = anthropic.Anthropic(
-            api_key=config.anthropic_api_key, timeout=90
+            api_key=config.anthropic_api_key, timeout=120
         )
     app.state.profile_store = ProfileStore(config.data_dir)
     app.state.search_params_store = SearchParamsStore(config.data_dir)

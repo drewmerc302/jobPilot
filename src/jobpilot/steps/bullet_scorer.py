@@ -140,7 +140,7 @@ def score_bullets(
         db,
         "profile_score_bullets",
         model=config.llm_extract_model,
-        max_tokens=2048,
+        max_tokens=4096,
         tools=[SCORE_BULLETS_TOOL],
         tool_choice={"type": "tool", "name": "score_bullets"},
         messages=[{"role": "user", "content": prompt}],

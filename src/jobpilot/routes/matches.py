@@ -21,7 +21,11 @@ from jobpilot.scrapers.greenhouse import GreenhouseProbeError, probe_greenhouse
 from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
 from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.steps.interview_prep import generate_interview_prep
-from jobpilot.steps.tailor import ensure_analysis, run_tailor_for_job
+from jobpilot.steps.tailor import (
+    PdfGenerationError,
+    ensure_analysis,
+    run_tailor_for_job,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -425,19 +429,16 @@ async def tailor_match(job_id: str, request: Request) -> HTMLResponse:
             config,
             adopt_edits=adopt_edits,
         )
-        resume_url = None
-        if result.get("resume_pdf"):
-            rel = Path(result["resume_pdf"]).relative_to(config.output_dir)
-            resume_url = f"/output/{rel.as_posix()}"
-            db.update_match_paths(job_id, resume_path=resume_url)
-        if resume_url:
-            return HTMLResponse(
-                f'<a href="{resume_url}" target="_blank" rel="noopener" class="btn btn-success btn-sm">'
-                f"✓ Open tailored resume ↗</a>"
-            )
+        rel = Path(result["resume_pdf"]).relative_to(config.output_dir)
+        resume_url = f"/output/{rel.as_posix()}"
+        db.update_match_paths(job_id, resume_path=resume_url)
         return HTMLResponse(
-            "<span class='error'>PDF generation failed — check logs.</span>"
+            f'<a href="{resume_url}" target="_blank" rel="noopener" class="btn btn-success btn-sm">'
+            f"✓ Open tailored resume ↗</a>"
         )
+    except PdfGenerationError as exc:
+        logger.error(f"PDF generation failed for {job_id}: {exc}")
+        return HTMLResponse(f"<span class='error'>PDF failed: {exc}</span>")
     except Exception as exc:
         logger.error(f"Tailor failed for {job_id}: {exc}")
         return HTMLResponse(f"<span class='error'>Tailor failed: {exc}</span>")

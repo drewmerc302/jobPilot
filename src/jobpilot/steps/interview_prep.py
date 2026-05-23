@@ -110,7 +110,12 @@ def _call_llm(
     extra_context: str = "",
 ) -> dict:
     role = _most_recent_role(resume_data)
-    resume_text = yaml.dump(resume_data, default_flow_style=False)[:4000]
+    llm_keys = {
+        k: v
+        for k, v in resume_data.items()
+        if k not in ("bullet_scores", "low_confidence_fields")
+    }
+    resume_text = yaml.dump(llm_keys, default_flow_style=False)[:4000]
 
     prompt = f"""You are preparing a {role} candidate for an interview.
 

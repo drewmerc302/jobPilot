@@ -12,7 +12,14 @@ from jobpilot.pricing import estimate_cost
 llm_retry = retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type((anthropic.APIError, anthropic.APIConnectionError)),
+    retry=retry_if_exception_type(
+        (
+            anthropic.APIConnectionError,
+            anthropic.APITimeoutError,
+            anthropic.RateLimitError,
+            anthropic.InternalServerError,
+        )
+    ),
     reraise=True,
 )
 

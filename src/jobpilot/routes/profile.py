@@ -6,7 +6,7 @@ import json
 import logging
 
 import anthropic
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 import jobpilot.llm as llm
@@ -468,6 +468,10 @@ async def score_bullets_route(request: Request) -> HTMLResponse:
         return HTMLResponse(
             "<p class='muted' style='font-size:13px'>Profile changed while analyzing — please re-run.</p>"
         )
+    if not scores:
+        return HTMLResponse(
+            "<p class='muted' style='font-size:13px'>Scoring returned no results — please try again.</p>"
+        )
     fresh["bullet_scores"] = scores
     profile_store.save(fresh)
     return HTMLResponse(_render_bullet_analysis(fresh, scores))
@@ -617,27 +621,72 @@ async def rewrite_bullet_route(request: Request) -> HTMLResponse:
 
 @router.get("/profile/generate-pdf")
 async def profile_generate_pdf(request: Request):
-    from jobpilot.steps.tailor import generate_resume_pdf
+    from jobpilot.steps.tailor import PdfGenerationError, generate_resume_pdf
 
     profile = request.app.state.profile_store.load() or {}
     if not profile:
         return HTMLResponse("No profile found. Complete setup first.", status_code=400)
 
     output_dir = request.app.state.config.output_dir / "base_resume"
-    pdf_path = await asyncio.to_thread(
-        generate_resume_pdf,
-        profile,
-        output_dir,
-        request.app.state.config,
-    )
-
-    if not pdf_path or not pdf_path.exists():
-        return HTMLResponse(
-            "PDF generation failed — Typst binary may be missing.", status_code=500
+    try:
+        pdf_path = await asyncio.to_thread(
+            generate_resume_pdf,
+            profile,
+            output_dir,
+            request.app.state.config,
         )
+    except PdfGenerationError as exc:
+        return HTMLResponse(f"PDF failed: {exc}", status_code=500)
 
     return FileResponse(
         pdf_path,
         media_type="application/pdf",
         headers={"Content-Disposition": 'inline; filename="resume.pdf"'},
     )
+
+
+_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+
+@router.post("/profile/re-upload", response_class=HTMLResponse)
+async def profile_re_upload(
+    request: Request, file: UploadFile = File(...)
+) -> HTMLResponse:
+    from jobpilot.steps.extract_resume import extract_resume
+
+    profile_store = request.app.state.profile_store
+    client = request.app.state.client
+    config = request.app.state.config
+    db = request.app.state.db
+
+    if client is None:
+        return HTMLResponse(
+            "<span class='error'>Add your API key in Settings first.</span>",
+            status_code=400,
+        )
+
+    content = await file.read()
+    if len(content) > _MAX_UPLOAD_BYTES:
+        return HTMLResponse(
+            "<span class='error'>File too large (max 5 MB).</span>", status_code=400
+        )
+
+    filename = file.filename or ""
+    if not (filename.lower().endswith(".pdf") or filename.lower().endswith(".docx")):
+        return HTMLResponse(
+            "<span class='error'>Please upload a PDF or DOCX file.</span>",
+            status_code=400,
+        )
+
+    try:
+        profile = await asyncio.to_thread(
+            extract_resume, content, filename, client, config, db
+        )
+    except Exception as exc:
+        logger.error(f"Resume re-upload extraction failed: {exc}")
+        return HTMLResponse(
+            f"<span class='error'>Extraction failed: {exc}</span>", status_code=500
+        )
+
+    profile_store.save(profile)
+    return RedirectResponse("/profile?saved=1", status_code=303)

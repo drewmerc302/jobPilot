@@ -16,7 +16,18 @@
     #if data.at("email", default: "") != "" { parts.push(data.at("email")) }
     #if data.at("phone", default: "") != "" { parts.push(data.at("phone")) }
     #if data.at("location", default: "") != "" { parts.push(data.at("location")) }
-    #if data.at("linkedin", default: "") != "" { parts.push(data.at("linkedin")) }
+    #let li = data.at("linkedin", default: "")
+    #if li != "" {
+      let url = if li.starts-with("http") { li } else { "https://" + li }
+      let label = li.replace("https://", "").replace("http://", "").replace("www.", "").trim("/", at: end)
+      parts.push(link(url)[#label])
+    }
+    #let gh = data.at("github", default: "")
+    #if gh != "" {
+      let url = if gh.starts-with("http") { gh } else { "https://" + gh }
+      let label = gh.replace("https://", "").replace("http://", "").replace("www.", "").trim("/", at: end)
+      parts.push(link(url)[#label])
+    }
     #parts.join("  ·  ")
   ]
 ]
