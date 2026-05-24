@@ -20,6 +20,8 @@ from jobpilot.pipeline import run_pipeline
 from jobpilot.scrapers.adzuna import AdzunaScraper
 from jobpilot.scrapers.greenhouse import GreenhouseProbeError, probe_greenhouse
 from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
+from jobpilot.scrapers.lever import LeverProbeError, probe_lever
+from jobpilot.scrapers.workday import WorkdayProbeError, probe_workday
 from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.steps.interview_prep import (
     generate_interview_prep,
@@ -153,24 +155,46 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
         scrapers.append(AdzunaScraper(sp))
 
     if sp.anchor_companies:
-        probe_results = await asyncio.gather(
-            *[asyncio.to_thread(probe_greenhouse, c) for c in sp.anchor_companies],
-            return_exceptions=True,
-        )
-        skipped: list[str] = []
-        for company, r in zip(sp.anchor_companies, probe_results, strict=False):
-            if isinstance(r, GreenhouseProbeError):
-                logger.warning("Greenhouse probe transient failure: %s", r)
-                skipped.append(company)
-            elif isinstance(r, Exception):
-                logger.warning("Greenhouse probe raised: %s", r)
-                skipped.append(company)
-            elif r is not None:
-                scrapers.append(r)
-        if skipped:
+        # Probe all three boards for each anchor company in parallel
+        all_probes = []
+        for c in sp.anchor_companies:
+            all_probes.append(asyncio.to_thread(probe_greenhouse, c))
+            all_probes.append(asyncio.to_thread(probe_lever, c))
+            all_probes.append(asyncio.to_thread(probe_workday, c))
+        probe_results = await asyncio.gather(*all_probes, return_exceptions=True)
+
+        gh_skipped: list[str] = []
+        for i, company in enumerate(sp.anchor_companies):
+            gh_r = probe_results[i * 3]
+            lever_r = probe_results[i * 3 + 1]
+            workday_r = probe_results[i * 3 + 2]
+
+            # Greenhouse — track skipped for warnings
+            if isinstance(gh_r, GreenhouseProbeError):
+                logger.warning("Greenhouse probe transient failure: %s", gh_r)
+                gh_skipped.append(company)
+            elif isinstance(gh_r, Exception):
+                logger.warning("Greenhouse probe raised: %s", gh_r)
+                gh_skipped.append(company)
+            elif gh_r is not None:
+                scrapers.append(gh_r)
+
+            # Lever
+            if isinstance(lever_r, (LeverProbeError, Exception)):
+                logger.warning("Lever probe for %s failed: %s", company, lever_r)
+            elif lever_r is not None:
+                scrapers.append(lever_r)
+
+            # Workday
+            if isinstance(workday_r, (WorkdayProbeError, Exception)):
+                logger.warning("Workday probe for %s failed: %s", company, workday_r)
+            elif workday_r is not None:
+                scrapers.append(workday_r)
+
+        if gh_skipped:
             run_status[run_id]["warnings"].append(
-                f"Greenhouse temporarily down — {len(skipped)} target "
-                f"compan{'y' if len(skipped) == 1 else 'ies'} skipped"
+                f"Greenhouse temporarily down — {len(gh_skipped)} target "
+                f"compan{'y' if len(gh_skipped) == 1 else 'ies'} skipped"
             )
 
     def update_stage(stage: str) -> None:
@@ -606,7 +630,7 @@ async def interview_prep_pdf(job_id: str, request: Request):
 
 @router.post("/matches/add-company", response_class=HTMLResponse)
 async def add_company(request: Request, company: str = Form(...)) -> HTMLResponse:
-    """Probe Greenhouse for a company board; if found, launch a background scrape+filter."""
+    """Probe job boards for a company; if found, launch a background scrape+filter."""
     company = company.strip()
     if not company:
         return HTMLResponse(
@@ -645,19 +669,32 @@ async def add_company(request: Request, company: str = Form(...)) -> HTMLRespons
                 "A scan is already running — wait for it to finish.</div>"
             )
 
-    # Probe Greenhouse synchronously
-    try:
-        gh_scraper = await asyncio.to_thread(probe_greenhouse, company)
-    except GreenhouseProbeError:
+    # Probe all supported job boards in parallel
+    probe_results = await asyncio.gather(
+        asyncio.to_thread(probe_greenhouse, company),
+        asyncio.to_thread(probe_lever, company),
+        asyncio.to_thread(probe_workday, company),
+        return_exceptions=True,
+    )
+
+    scraper = None
+    all_transient = all(isinstance(r, Exception) for r in probe_results)
+    if not all_transient:
+        for r in probe_results:
+            if not isinstance(r, Exception) and r is not None:
+                scraper = r
+                break
+
+    if scraper is None and all_transient:
         return HTMLResponse(
             "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
-            "Greenhouse temporarily unreachable — try again in a minute.</div>"
+            "Job board services temporarily unreachable — try again in a minute.</div>"
         )
 
-    if gh_scraper is None:
+    if scraper is None:
         return HTMLResponse(
             "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
-            f"No public Greenhouse board found for '{html_mod.escape(company)}'.</div>"
+            f"No public job board found for '{html_mod.escape(company)}'.</div>"
         )
 
     # Launch background pipeline for this single company
@@ -692,7 +729,7 @@ async def add_company(request: Request, company: str = Form(...)) -> HTMLRespons
                 profile,
                 sp,
                 config,
-                [gh_scraper],
+                [scraper],
                 client,
                 run_id,
                 update_stage,

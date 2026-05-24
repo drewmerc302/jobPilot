@@ -11,6 +11,8 @@ from jobpilot.pipeline import run_pipeline
 from jobpilot.scrapers.adzuna import AdzunaScraper
 from jobpilot.scrapers.greenhouse import GreenhouseProbeError, probe_greenhouse
 from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
+from jobpilot.scrapers.lever import LeverProbeError, probe_lever
+from jobpilot.scrapers.workday import WorkdayProbeError, probe_workday
 from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.search_params import SearchParams
 from jobpilot.steps.discover_companies import discover_companies
@@ -411,15 +413,33 @@ async def _build_scrapers(sp) -> list:
         scrapers.append(AdzunaScraper(sp))
 
     if sp.anchor_companies:
-        probe_results = await asyncio.gather(
-            *[asyncio.to_thread(probe_greenhouse, c) for c in sp.anchor_companies],
-            return_exceptions=True,
-        )
-        for company, r in zip(sp.anchor_companies, probe_results, strict=False):
-            if isinstance(r, (GreenhouseProbeError, Exception)):
-                logger.warning("Greenhouse probe for %s failed: %s", company, r)
-            elif r is not None:
-                scrapers.append(r)
+        # Probe all three boards for each anchor company in parallel
+        all_probes = []
+        for c in sp.anchor_companies:
+            all_probes.append(asyncio.to_thread(probe_greenhouse, c))
+            all_probes.append(asyncio.to_thread(probe_lever, c))
+            all_probes.append(asyncio.to_thread(probe_workday, c))
+        probe_results = await asyncio.gather(*all_probes, return_exceptions=True)
+
+        for i, company in enumerate(sp.anchor_companies):
+            gh_r = probe_results[i * 3]
+            lever_r = probe_results[i * 3 + 1]
+            workday_r = probe_results[i * 3 + 2]
+
+            if isinstance(gh_r, (GreenhouseProbeError, Exception)):
+                logger.warning("Greenhouse probe for %s failed: %s", company, gh_r)
+            elif gh_r is not None:
+                scrapers.append(gh_r)
+
+            if isinstance(lever_r, (LeverProbeError, Exception)):
+                logger.warning("Lever probe for %s failed: %s", company, lever_r)
+            elif lever_r is not None:
+                scrapers.append(lever_r)
+
+            if isinstance(workday_r, (WorkdayProbeError, Exception)):
+                logger.warning("Workday probe for %s failed: %s", company, workday_r)
+            elif workday_r is not None:
+                scrapers.append(workday_r)
 
     return scrapers
 
