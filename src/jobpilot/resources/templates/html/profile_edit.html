@@ -128,8 +128,8 @@
     {# ── Skills ── #}
     <div class="card" style="padding:20px;margin-bottom:16px">
       <h3 style="margin:0 0 4px;font-size:15px" data-tooltip="These skills feed directly into match scoring. The more accurate this list, the better your results.">Skills</h3>
-      <p class="muted" style="font-size:12px;margin:0 0 10px">One skill per line. Edit freely — add, remove, or reword.</p>
-      <textarea name="skills_text" rows="14"
+      <p class="muted" style="font-size:12px;margin:0 0 10px">Grouped by category. Category headers on their own line, skills prefixed with •.</p>
+      <textarea name="skills_text" rows="24"
                 style="font-size:12px;line-height:1.7;resize:vertical;font-family:inherit">{{ skills_text }}</textarea>
     </div>
 
@@ -199,7 +199,7 @@
       {% endfor %}
     </div>
 
-    <div id="bullet-analysis-panel" style="margin-bottom:16px">
+    <div id="bullet-analysis-panel" style="margin-bottom:16px;scroll-margin-top:68px">
       {% if bullet_analysis_html is defined and bullet_analysis_html %}
       {{ bullet_analysis_html | safe }}
       {% endif %}

@@ -163,8 +163,10 @@
                     hx-post="/matches/{{ job.id }}/interview-prep"
                     hx-target="#prep-section"
                     hx-swap="innerHTML"
+                    hx-indicator="#prep-spinner"
+                    hx-on::after-request="var el=document.getElementById('prep-section');if(el.children.length)el.scrollIntoView({behavior:'smooth',block:'start'})"
                     data-tooltip="Generate likely interview questions with suggested answers tailored to this role.">
-              <span class="htmx-indicator spinner"></span>
+              <span id="prep-spinner" class="htmx-indicator spinner"></span>
               {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %}
             </button>
             <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.08 per use</p>
@@ -188,7 +190,7 @@
     </div>
   </div>
 
-  <div id="prep-section">
+  <div id="prep-section" style="scroll-margin-top:68px">
     {% include "_partials/interview_prep_result.html" %}
   </div>
 </div>

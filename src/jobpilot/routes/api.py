@@ -55,6 +55,10 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
         result = None
         error = None
 
+    detail = (progress or {}).get("detail", "")
+    filter_current = (progress or {}).get("filter_current", 0)
+    filter_total = (progress or {}).get("filter_total", 0)
+
     ctx = {
         "run_id": run_id,
         "stage": stage,
@@ -62,6 +66,9 @@ async def run_status(run_id: int, request: Request) -> HTMLResponse:
         "result": result,
         "error": error,
         "warnings": warnings,
+        "detail": detail,
+        "filter_current": filter_current,
+        "filter_total": filter_total,
     }
 
     if stage in ("starting", "scraping", "filtering"):

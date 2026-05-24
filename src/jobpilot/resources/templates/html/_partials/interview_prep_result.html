@@ -1,6 +1,12 @@
 {% if prep_result %}
 <div class="card" style="margin-top:16px">
-  <h3 style="margin:0 0 16px;font-size:15px;font-weight:700">Interview Prep</h3>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <h3 style="margin:0;font-size:15px;font-weight:700">Interview Prep</h3>
+    <a href="/matches/{{ job_id }}/interview-prep.pdf" target="_blank" rel="noopener"
+       class="btn btn-outline btn-sm" style="font-size:12px">
+      ↓ Download PDF
+    </a>
+  </div>
 
   {% if prep_result.talking_points %}
   <div style="margin-bottom:20px">
@@ -28,10 +34,10 @@
   <div style="margin-bottom:20px">
     <h4 style="margin:0 0 8px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Predicted questions &amp; STAR stories</h4>
     {% for story in prep_result.star_stories %}
-    <details style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
+    <details open style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
       <summary style="padding:10px 14px;cursor:pointer;font-size:14px;font-weight:500;list-style:none;display:flex;justify-content:space-between;align-items:center">
         <span>{{ story.question }}</span>
-        <span style="color:var(--muted);font-size:12px;margin-left:8px;flex-shrink:0">▸ STAR</span>
+        <span style="color:var(--muted);font-size:12px;margin-left:8px;flex-shrink:0">▾ STAR</span>
       </summary>
       <div style="padding:0 14px 12px;font-size:14px;border-top:1px solid var(--border)">
         {% if story.resume_bullet %}
@@ -52,11 +58,24 @@
   {% if prep_result.likely_questions %}
   <div>
     <h4 style="margin:0 0 8px;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Additional likely questions</h4>
-    <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.8">
-      {% for q in prep_result.likely_questions %}
-      <li>{{ q }}</li>
-      {% endfor %}
-    </ul>
+    {% for q in prep_result.likely_questions %}
+    {% if q is string %}
+    <details style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
+      <summary style="padding:10px 14px;cursor:pointer;font-size:14px;font-weight:500;list-style:none">{{ q }}</summary>
+    </details>
+    {% else %}
+    <details style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
+      <summary style="padding:10px 14px;cursor:pointer;font-size:14px;font-weight:500;list-style:none;display:flex;justify-content:space-between;align-items:center">
+        <span>{{ q.question }}</span>
+        <span style="color:var(--muted);font-size:12px;margin-left:8px;flex-shrink:0">▸ answer</span>
+      </summary>
+      <div style="padding:0 14px 12px;font-size:14px;border-top:1px solid var(--border)">
+        <p style="margin:10px 0 8px"><strong>Suggested answer:</strong> {{ q.suggested_answer }}</p>
+        <p style="margin:0;font-size:12px;color:var(--muted);font-style:italic">Why: {{ q.rationale }}</p>
+      </div>
+    </details>
+    {% endif %}
+    {% endfor %}
   </div>
   {% endif %}
 </div>

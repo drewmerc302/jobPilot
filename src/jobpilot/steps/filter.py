@@ -101,22 +101,45 @@ def location_filter(jobs: list[dict], search_params: SearchParams) -> list[dict]
     return passed
 
 
+_STOP_WORDS = {"of", "the", "a", "an", "and", "or", "in", "at", "for", "to", "on"}
+
+
+def _keyword_significant_words(keywords: list[str]) -> set[str]:
+    words = set()
+    for kw in keywords:
+        words.update(w for w in kw.lower().split() if w not in _STOP_WORDS)
+    return words
+
+
 def _matches_keywords(title: str, keywords: list[str]) -> bool:
-    title_lower = title.lower()
-    return any(kw.lower() in title_lower for kw in keywords)
+    title_words = set(title.lower().split())
+    for kw in keywords:
+        kw_words = {w for w in kw.lower().split() if w not in _STOP_WORDS}
+        if kw_words and kw_words.issubset(title_words):
+            return True
+    return False
+
+
+def _title_overlap_score(title: str, sig_words: set[str]) -> int:
+    title_words = set(title.lower().split())
+    return len(title_words & sig_words)
 
 
 def keyword_filter(jobs: list[dict], search_params: SearchParams) -> list[dict]:
+    if not search_params.keywords:
+        return [j for j in jobs if j.get("description")]
+
+    sig_words = _keyword_significant_words(search_params.keywords)
     matches = []
     for job in jobs:
         if not job.get("description"):
-            logger.debug(f"Skipping {job['id']}: no description")
             continue
-        if search_params.keywords and not _matches_keywords(
-            job["title"], search_params.keywords
-        ):
+        if job.get("source") == "greenhouse":
+            if _title_overlap_score(job["title"], sig_words) >= 2:
+                matches.append(job)
             continue
-        matches.append(job)
+        if _matches_keywords(job["title"], search_params.keywords):
+            matches.append(job)
     logger.info(f"Keyword filter: {len(jobs)} -> {len(matches)}")
     return matches
 
@@ -180,6 +203,7 @@ def run_filter(
     config: Config,
     client: anthropic.Anthropic | None = None,
     run_id: int | None = None,
+    progress_cb=None,
 ) -> list[dict]:
     jobs = [db.get_job(job_id) for job_id in new_job_ids]
     jobs = [j for j in jobs if j]
@@ -191,7 +215,19 @@ def run_filter(
     if client is None:
         client = anthropic.Anthropic(api_key=config.anthropic_api_key, timeout=90)
     matches = []
-    for job in candidates:
+    total = len(candidates)
+    if progress_cb:
+        progress_cb(
+            f"Evaluating {total} candidates…", filter_current=0, filter_total=total
+        )
+    for i, job in enumerate(candidates, 1):
+        if progress_cb:
+            company = job.get("company", "")
+            progress_cb(
+                f"{company} — {job.get('title', '')}",
+                filter_current=i,
+                filter_total=total,
+            )
         try:
             result = llm_evaluate(job, resume_summary, config, client, db, run_id)
             if (

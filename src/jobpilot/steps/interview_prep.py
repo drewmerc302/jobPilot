@@ -1,6 +1,9 @@
 import logging
+import shutil
+import subprocess
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 import anthropic
 import yaml
@@ -14,6 +17,7 @@ from tenacity import (
 from jobpilot import llm as llm_module
 from jobpilot.config import Config
 from jobpilot.db import Database
+from jobpilot.steps.tailor import PdfGenerationError, _typst_binary
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +36,22 @@ PREP_TOOL = {
         "properties": {
             "likely_questions": {
                 "type": "array",
-                "items": {"type": "string"},
-                "description": "Predicted behavioral and technical interview questions based on the JD",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "question": {"type": "string"},
+                        "suggested_answer": {
+                            "type": "string",
+                            "description": "A strong suggested answer drawing on the candidate's resume and experience",
+                        },
+                        "rationale": {
+                            "type": "string",
+                            "description": "Why this question is likely and why this answer works",
+                        },
+                    },
+                    "required": ["question", "suggested_answer", "rationale"],
+                },
+                "description": "Predicted behavioral and technical interview questions with suggested answers",
             },
             "star_stories": {
                 "type": "array",
@@ -181,3 +199,65 @@ def generate_interview_prep(
     except Exception as e:
         logger.error(f"interview_prep: LLM call failed for {job_id}: {e}")
         return None
+
+
+def generate_interview_prep_pdf(
+    prep_data: dict,
+    job_title: str,
+    company: str,
+    output_dir: Path,
+    config: Config,
+) -> Path:
+    """Compile interview-prep JSON -> PDF via bundled Typst binary.
+
+    Raises PdfGenerationError with a user-readable reason on failure.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    yaml_path = output_dir / "interview_prep_data.yaml"
+    src_template = config.template_dir / "interview_prep.typ"
+    local_template = output_dir / "interview_prep.typ"
+    pdf_path = output_dir / "interview_prep.pdf"
+
+    data = {
+        "job_title": job_title,
+        "company": company,
+        **{
+            k: prep_data[k]
+            for k in ("talking_points", "red_flags", "star_stories", "likely_questions")
+            if k in prep_data
+        },
+    }
+
+    with open(yaml_path, "w", encoding="utf-8") as f:
+        yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
+
+    typst_bin = _typst_binary(config)
+    if not typst_bin.exists():
+        raise PdfGenerationError(f"Typst binary not found at {typst_bin}")
+    if not src_template.exists():
+        raise PdfGenerationError(f"Interview prep template not found at {src_template}")
+
+    shutil.copyfile(src_template, local_template)
+
+    try:
+        subprocess.run(
+            [
+                str(typst_bin),
+                "compile",
+                "interview_prep.typ",
+                "interview_prep.pdf",
+                "--input",
+                "data=interview_prep_data.yaml",
+                "--root",
+                str(output_dir),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            cwd=str(output_dir),
+        )
+        return pdf_path
+    except subprocess.CalledProcessError as e:
+        raise PdfGenerationError(f"Typst compile failed: {e.stderr}") from e

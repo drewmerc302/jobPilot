@@ -14,15 +14,32 @@ def _scrape_one(scraper: BaseScraper) -> tuple[str, list[RawJob], Exception | No
         return scraper.company_name, [], e
 
 
-def run_scrape(db: Database, scrapers: list[BaseScraper]) -> dict:
+def run_scrape(
+    db: Database,
+    scrapers: list[BaseScraper],
+    progress_cb=None,
+) -> dict:
     total_scraped = 0
     all_new_ids = []
     failed_companies = []
+    total = len(scrapers)
+    done_count = 0
 
-    # Fetch from all scrapers concurrently; DB writes happen serially after
+    def _report(company, status):
+        nonlocal done_count
+        done_count += 1
+        if progress_cb:
+            progress_cb(f"{status} {company} ({done_count}/{total})")
+
     with ThreadPoolExecutor(max_workers=max(len(scrapers), 1)) as executor:
         futures = {executor.submit(_scrape_one, s): s for s in scrapers}
-        scraper_results = [(futures[f], f.result()) for f in as_completed(futures)]
+        scraper_results = []
+        for f in as_completed(futures):
+            scraper = futures[f]
+            result = f.result()
+            company_name = result[0]
+            _report(company_name, "✓" if not result[2] else "✗")
+            scraper_results.append((scraper, result))
 
     for scraper, (company, jobs, error) in scraper_results:
         if error:

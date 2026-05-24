@@ -151,9 +151,16 @@
         <label for="se-seniority">Seniority</label>
         <select id="se-seniority" name="seniority">
           <option value="">Any</option>
-          {% for level in ["Junior", "Mid", "Senior", "Lead", "Staff", "Principal", "Manager", "Director"] %}
+          <optgroup label="Individual Contributor">
+          {% for level in ["Junior", "Mid", "Senior", "Lead", "Staff", "Principal"] %}
           <option value="{{ level }}" {% if sp.seniority == level %}selected{% endif %}>{{ level }}</option>
           {% endfor %}
+          </optgroup>
+          <optgroup label="Management">
+          {% for level in ["Manager", "Senior Manager", "Director", "VP"] %}
+          <option value="{{ level }}" {% if sp.seniority == level %}selected{% endif %}>{{ level }}</option>
+          {% endfor %}
+          </optgroup>
         </select>
       </div>
       <div style="display:flex;align-items:center;gap:8px;padding-top:24px">

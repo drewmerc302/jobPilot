@@ -1,10 +1,12 @@
 """Settings page: API key and monthly budget management."""
 
 import logging
+import os
+import signal
 
 import anthropic
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -79,3 +81,10 @@ async def settings_clear_key(request: Request) -> RedirectResponse:
     config.has_byo_key = False
     request.app.state.client = None
     return RedirectResponse("/settings?cleared=1", status_code=303)
+
+
+@router.post("/settings/quit")
+async def settings_quit(request: Request) -> JSONResponse:
+    """Shut down the jobPilot process."""
+    os.kill(os.getpid(), signal.SIGTERM)
+    return JSONResponse({"status": "shutting_down"})

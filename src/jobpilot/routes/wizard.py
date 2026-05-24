@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from jobpilot.ladder import compute_ladder
 from jobpilot.pipeline import run_pipeline
 from jobpilot.scrapers.adzuna import AdzunaScraper
+from jobpilot.scrapers.greenhouse import GreenhouseProbeError, probe_greenhouse
 from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
 from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.search_params import SearchParams
@@ -351,12 +352,23 @@ async def step4_get(request: Request) -> HTMLResponse:
     run_status = request.app.state.run_status
 
     run_id = db.start_run()
-    run_status[run_id] = {"stage": "starting", "result": None, "error": None}
+    run_status[run_id] = {
+        "stage": "starting",
+        "result": None,
+        "error": None,
+        "detail": "",
+    }
 
-    scrapers = _build_scrapers(sp)
+    scrapers = await _build_scrapers(sp)
 
     def update_stage(stage: str) -> None:
         run_status[run_id]["stage"] = stage
+
+    def update_detail(detail: str, filter_current=0, filter_total=0) -> None:
+        run_status[run_id]["detail"] = detail
+        if filter_total:
+            run_status[run_id]["filter_current"] = filter_current
+            run_status[run_id]["filter_total"] = filter_total
 
     async def _run():
         try:
@@ -370,6 +382,7 @@ async def step4_get(request: Request) -> HTMLResponse:
                 client,
                 run_id,
                 update_stage,
+                update_detail,
             )
             run_status[run_id]["stage"] = "done"
             run_status[run_id]["result"] = result
@@ -390,12 +403,24 @@ async def step4_get(request: Request) -> HTMLResponse:
 # ---------------------------------------------------------------------------
 
 
-def _build_scrapers(sp) -> list:
+async def _build_scrapers(sp) -> list:
     scrapers: list = [JobSpyScraper(sp)]
     if JooblesScraper.is_configured():
         scrapers.append(JooblesScraper(sp))
     if AdzunaScraper.is_configured():
         scrapers.append(AdzunaScraper(sp))
+
+    if sp.anchor_companies:
+        probe_results = await asyncio.gather(
+            *[asyncio.to_thread(probe_greenhouse, c) for c in sp.anchor_companies],
+            return_exceptions=True,
+        )
+        for company, r in zip(sp.anchor_companies, probe_results, strict=False):
+            if isinstance(r, (GreenhouseProbeError, Exception)):
+                logger.warning("Greenhouse probe for %s failed: %s", company, r)
+            elif r is not None:
+                scrapers.append(r)
+
     return scrapers
 
 

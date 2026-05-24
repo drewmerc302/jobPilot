@@ -49,6 +49,7 @@ def run_pipeline(
     client=None,
     run_id: int | None = None,
     stage_updater=None,
+    detail_updater=None,
 ) -> dict:
     """Run the full scrape → dedup → filter pipeline.
 
@@ -76,13 +77,15 @@ def run_pipeline(
         geocode(search_params)
         resume_summary = get_resume_summary(resume_data)
 
-        scrape_result = run_scrape(db, scrapers)
+        scrape_result = run_scrape(db, scrapers, progress_cb=detail_updater)
         logger.info(
             f"Scrape complete: {scrape_result['jobs_scraped']} jobs, "
             f"{scrape_result['new_jobs']} new"
         )
 
         run_dedup(db)
+        if detail_updater:
+            detail_updater("")
         _set_stage("filtering")
 
         new_job_ids = scrape_result["new_job_ids"]
@@ -94,6 +97,7 @@ def run_pipeline(
             config,
             client=client,
             run_id=run_id,
+            progress_cb=detail_updater,
         )
         logger.info(f"Filter complete: {len(matches)} matches")
         _set_stage("done")

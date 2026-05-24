@@ -9,9 +9,11 @@ from dotenv import load_dotenv
 # Dev override: set JOBPILOT_DATA_DIR in your shell or a .env file.
 _USER_DATA_DIR = Path(os.getenv("JOBPILOT_DATA_DIR", Path.home() / ".jobpilot"))
 
-# Load .env from the user data dir (lets advanced users drop a key file there)
+# Load .env from the user data dir (lets advanced users drop a key file there),
+# then bundled resources (ships with the .app for pre-keyed builds),
 # then fall back to CWD-based search (useful in dev with a project-root .env).
 load_dotenv(_USER_DATA_DIR / ".env")
+load_dotenv(Path(__file__).parent / "resources" / ".env")
 load_dotenv()
 
 

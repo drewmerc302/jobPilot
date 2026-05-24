@@ -7,13 +7,20 @@
     <span class="spinner"></span>
     <span>
       {% if stage == "starting" %}Starting up…
-      {% elif stage == "scraping" %}Searching job boards… <span class="muted" style="font-size:12px">(this can take a few minutes depending on how many matches are found)</span>
-      {% elif stage == "filtering" %}Evaluating matches…
+      {% elif stage == "scraping" %}Scanning job boards…
+      {% elif stage == "filtering" %}Evaluating matches…{% if filter_total %} ({{ filter_current }}/{{ filter_total }}){% endif %}
       {% endif %}
     </span>
   </div>
+  {% if detail %}
+  <p class="muted" style="font-size:12px;margin:0 0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ detail }}</p>
+  {% endif %}
   <div class="progress-bar-wrap">
-    <div class="progress-bar" style="width:{% if stage == 'starting' %}10{% elif stage == 'scraping' %}40{% else %}75{% endif %}%"></div>
+    {% if stage == "filtering" and filter_total > 0 %}
+    <div class="progress-bar" style="width:{{ (filter_current * 100 / filter_total) | int }}%"></div>
+    {% else %}
+    <div class="progress-bar" style="width:{% if stage == 'starting' %}10{% elif stage == 'scraping' %}40{% else %}5{% endif %}%"></div>
+    {% endif %}
   </div>
 </div>
 
@@ -24,15 +31,27 @@
   </div>
   {% if result %}
   <p class="muted">
-    {{ result.new_jobs }} new jobs found ·
-    {{ result.new_matches }} matches{% if result.duration %} ·
+    {{ result.jobs_scraped }} jobs scanned ·
+    {{ result.new_matches }} matched your profile{% if result.duration %} ·
     took {{ result.duration }}{% endif %}
   </p>
+  {% if result.new_matches == 0 and result.jobs_scraped > 0 %}
+  <div class="alert alert-warning" style="margin:8px 0 0;font-size:13px">
+    None of the scraped jobs matched your keywords and profile closely enough. Try broadening your keywords or lowering the seniority filter.
+  </div>
+  {% endif %}
   {% endif %}
   {% for w in (warnings or []) %}
   <div class="alert alert-warning" style="margin:8px 0 0;font-size:13px">{{ w }}</div>
   {% endfor %}
+  {% if result and result.new_matches > 0 %}
   <a href="/matches" class="btn btn-primary" style="margin-top:8px">View matches →</a>
+  {% else %}
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <a href="/matches" class="btn btn-outline">View matches</a>
+    <a href="/wizard/step/3" class="btn btn-primary">Edit search →</a>
+  </div>
+  {% endif %}
 </div>
 
 {% elif stage == "error" %}

@@ -68,16 +68,29 @@ _PARSE_EXPERIENCE_TOOL = {
 
 
 def _skills_to_text(skills: dict) -> str:
-    lines = []
-    for items in (skills or {}).values():
-        if isinstance(items, list):
-            lines.extend(str(s) for s in items if s)
-    return "\n".join(lines)
+    blocks = []
+    for category, items in (skills or {}).items():
+        if isinstance(items, list) and items:
+            block = [category]
+            block.extend(f"• {s}" for s in items if s)
+            blocks.append("\n".join(block))
+    return "\n\n".join(blocks)
 
 
 def _text_to_skills(text: str) -> dict:
-    items = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    return {"Skills": items} if items else {}
+    result: dict[str, list[str]] = {}
+    current_cat = "Skills"
+    for ln in text.splitlines():
+        stripped = ln.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("•"):
+            result.setdefault(current_cat, []).append(stripped.lstrip("•").strip())
+        else:
+            current_cat = stripped
+    if not result:
+        return {}
+    return result
 
 
 def _parse_experience_from_form(form) -> list[dict]:

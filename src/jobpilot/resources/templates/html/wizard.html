@@ -24,7 +24,7 @@
       <li>Set up your search</li>
       <li>Run your first job search</li>
     </ol>
-    <p class="muted">Takes about 5 minutes. We'll cover API costs to get you started.</p>
+    <p class="muted">Setup takes ~2 minutes. Your first search runs 10–30 minutes in the background. We cover AI costs to get you started.</p>
     <a href="/wizard/step/1" class="btn btn-primary" style="margin-top:8px">Get Started →</a>
   </div>
 
@@ -215,9 +215,16 @@
           <label for="seniority">Seniority filter</label>
           <select id="seniority" name="seniority">
             <option value="">Any level</option>
-            {% for s in ["Junior", "Mid", "Senior", "Lead", "Staff", "Principal", "Manager", "Director"] %}
+            <optgroup label="Individual Contributor">
+            {% for s in ["Junior", "Mid", "Senior", "Lead", "Staff", "Principal"] %}
             <option value="{{ s }}" {% if sp and sp.seniority == s %}selected{% endif %}>{{ s }}</option>
             {% endfor %}
+            </optgroup>
+            <optgroup label="Management">
+            {% for s in ["Manager", "Senior Manager", "Director", "VP"] %}
+            <option value="{{ s }}" {% if sp and sp.seniority == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+            </optgroup>
           </select>
         </div>
       </div>
@@ -257,7 +264,7 @@
   {% elif step == 4 %}
   <div class="card">
     <h1 class="wizard-title">Finding your matches…</h1>
-    <p class="wizard-sub">Sit tight — we're scanning job boards and ranking results for you.</p>
+    <p class="wizard-sub">Scanning job boards and AI-ranking each result against your resume. This typically takes 10–30 minutes depending on how many target companies you added. Feel free to leave this tab open and come back.</p>
 
     <div id="run-status"
          hx-get="/api/run/{{ run_id }}/status"

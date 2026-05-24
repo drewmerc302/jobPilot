@@ -1,6 +1,10 @@
 {% if suggestions %}
 <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:8px">
-  <p style="margin:0 0 12px;font-weight:600;font-size:14px">Found {{ suggestions|length }} similar companies — check any to add:</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <p style="margin:0;font-weight:600;font-size:14px">Found {{ suggestions|length }} similar companies — check any to add:</p>
+    <button type="button" class="btn btn-outline btn-sm" style="font-size:11px;padding:2px 8px"
+            onclick="var boxes=this.closest('div').parentElement.querySelectorAll('input[name=extra_companies]');var allChecked=[...boxes].every(b=>b.checked);boxes.forEach(b=>b.checked=!allChecked);this.textContent=allChecked?'Select all':'Select none'">Select all</button>
+  </div>
   {% for s in suggestions %}
   <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-weight:400;cursor:pointer;font-size:14px">
     <input type="checkbox" name="extra_companies" value="{{ s.name }}" style="margin-top:3px;width:auto">

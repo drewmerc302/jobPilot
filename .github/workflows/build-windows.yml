@@ -31,6 +31,28 @@ jobs:
       - name: Build
         run: briefcase build windows
 
+      # python-jobspy >=1.1.75 pins NUMPY==1.26.3 which has no cp313 wheel.
+      # Briefcase installs the old 1.1.13 (resolves but incompatible API).
+      # Patch: install the latest jobspy into a temp dir, then copy over.
+      - name: Patch jobspy to latest version
+        shell: pwsh
+        run: |
+          $appPkg = (Get-ChildItem -Path "build" -Recurse -Directory -Filter "app_packages" | Select-Object -First 1).FullName
+          if (-not $appPkg) { Write-Error "app_packages not found"; exit 1 }
+          Write-Host "Found app_packages at: $appPkg"
+          $tempDir = "build\_jobspy_patch"
+          pip install python-jobspy --target $tempDir --quiet
+          # Remove old versions
+          Remove-Item -Recurse -Force "$appPkg\jobspy" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "$appPkg\tls_client" -ErrorAction SilentlyContinue
+          # Copy new versions
+          Copy-Item -Recurse "$tempDir\jobspy" "$appPkg\jobspy"
+          Copy-Item -Recurse "$tempDir\tls_client" "$appPkg\tls_client"
+          # Copy new deps that old jobspy didn't have
+          if (Test-Path "$tempDir\markdownify") { Copy-Item -Recurse "$tempDir\markdownify" "$appPkg\markdownify" }
+          if (Test-Path "$tempDir\regex") { Copy-Item -Recurse "$tempDir\regex" "$appPkg\regex" }
+          Remove-Item -Recurse -Force $tempDir
+
       - name: Package (unsigned MSI)
         run: briefcase package windows
 

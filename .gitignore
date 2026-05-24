@@ -78,6 +78,10 @@ logs/
 # Briefcase local configuratoin
 .briefcase/
 
+# Bundled secrets (pre-keyed builds for testing)
+.env
+src/jobpilot/resources/.env
+
 # Vendored binaries (downloaded by scripts/fetch_typst.sh — see README)
 src/jobpilot/resources/typst/*/typst
 src/jobpilot/resources/typst/*/typst.exe

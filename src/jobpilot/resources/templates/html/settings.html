@@ -103,5 +103,19 @@
       <a href="/matches" class="btn btn-outline">Cancel</a>
     </div>
   </form>
+
+  <hr style="margin:32px 0;border:none;border-top:1px solid var(--border)">
+
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <h3 style="margin:0 0 4px;font-size:15px;font-weight:700">Quit jobPilot</h3>
+      <p class="muted" style="margin:0;font-size:12px">Stops the server and closes the menu bar icon. Your data is saved.</p>
+    </div>
+    <button type="button" class="btn btn-outline btn-sm"
+            style="color:var(--red);border-color:var(--red)"
+            onclick="if(confirm('Quit jobPilot? You can relaunch it from Applications.')){fetch('/settings/quit',{method:'POST'}).then(()=>{document.body.innerHTML='<div style=&quot;display:flex;align-items:center;justify-content:center;height:80vh;font-size:18px;color:#888&quot;>jobPilot has quit. You can close this tab.</div>'}).catch(()=>{document.body.innerHTML='<div style=&quot;display:flex;align-items:center;justify-content:center;height:80vh;font-size:18px;color:#888&quot;>jobPilot has quit. You can close this tab.</div>'})}">
+      Quit
+    </button>
+  </div>
 </div>
 {% endblock %}

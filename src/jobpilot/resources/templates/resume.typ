@@ -75,11 +75,14 @@
   == Skills
 
   #if type(skills) == array [
-    #text(size: 9.5pt)[#skills.join(", ")]
+    #for s in skills [
+      #set text(size: 9.5pt)
+      - #s
+    ]
   ] else [
     #for (cat, items) in skills [
-      #text(size: 9.5pt)[*#cat:* #items.join(", ")]
-      \
+      #set text(size: 9.5pt)
+      - *#cat:* #items.join(", ")
     ]
   ]
   #v(0.3em)
@@ -94,8 +97,8 @@
     #grid(
       columns: (1fr, auto),
       gutter: 4pt,
-      [*#edu.at("school", default: "")* — #edu.at("degree", default: "")],
-      [#text(size: 9pt, fill: luma(80))[#edu.at("year", default: "")]],
+      [*#edu.at("institution", default: "")* — #edu.at("degree", default: "")],
+      [#text(size: 9pt, fill: luma(80))[#edu.at("graduation_year", default: "")]],
     )
   ]
 ]

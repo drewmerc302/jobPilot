@@ -20,7 +20,10 @@ from jobpilot.scrapers.adzuna import AdzunaScraper
 from jobpilot.scrapers.greenhouse import GreenhouseProbeError, probe_greenhouse
 from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
 from jobpilot.scrapers.jooble import JooblesScraper
-from jobpilot.steps.interview_prep import generate_interview_prep
+from jobpilot.steps.interview_prep import (
+    generate_interview_prep,
+    generate_interview_prep_pdf,
+)
 from jobpilot.steps.tailor import (
     PdfGenerationError,
     ensure_analysis,
@@ -135,6 +138,7 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
         "result": None,
         "error": None,
         "warnings": [],
+        "detail": "",
     }
 
     scrapers: list = [JobSpyScraper(sp)]
@@ -143,7 +147,6 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
     if AdzunaScraper.is_configured():
         scrapers.append(AdzunaScraper(sp))
 
-    # Probe Greenhouse for each anchor company in parallel
     if sp.anchor_companies:
         probe_results = await asyncio.gather(
             *[asyncio.to_thread(probe_greenhouse, c) for c in sp.anchor_companies],
@@ -168,6 +171,12 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
     def update_stage(stage: str) -> None:
         run_status[run_id]["stage"] = stage
 
+    def update_detail(detail: str, filter_current=0, filter_total=0) -> None:
+        run_status[run_id]["detail"] = detail
+        if filter_total:
+            run_status[run_id]["filter_current"] = filter_current
+            run_status[run_id]["filter_total"] = filter_total
+
     async def _run():
         try:
             result = await asyncio.to_thread(
@@ -180,6 +189,7 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
                 client,
                 run_id,
                 update_stage,
+                update_detail,
             )
             run_status[run_id]["stage"] = "done"
             run_status[run_id]["result"] = result
@@ -539,11 +549,54 @@ async def interview_prep_match(job_id: str, request: Request) -> HTMLResponse:
         return templates.TemplateResponse(
             request,
             "_partials/interview_prep_result.html",
-            {"prep_result": prep_result},
+            {"prep_result": prep_result, "job_id": job_id},
         )
     except Exception as exc:
         logger.error(f"Interview prep failed for {job_id}: {exc}")
         return HTMLResponse(f"<span class='error'>Interview prep failed: {exc}</span>")
+
+
+@router.get("/matches/{job_id}/interview-prep.pdf")
+async def interview_prep_pdf(job_id: str, request: Request):
+    """Generate and serve interview-prep PDF on demand."""
+    db = request.app.state.db
+    config = request.app.state.config
+
+    match = db.get_match(job_id)
+    if not match or not match.get("interview_prep_path"):
+        return HTMLResponse("Interview prep not found", status_code=404)
+
+    prep_path = Path(match["interview_prep_path"])
+    if not prep_path.exists():
+        return HTMLResponse("Interview prep data missing", status_code=404)
+
+    try:
+        prep_data = json.loads(prep_path.read_text(encoding="utf-8"))
+    except Exception:
+        return HTMLResponse("Could not read interview prep data", status_code=500)
+
+    job = db.get_job(job_id)
+    if not job:
+        return HTMLResponse("Job not found", status_code=404)
+
+    try:
+        output_dir = config.output_dir / job_id
+        pdf_path = await asyncio.to_thread(
+            generate_interview_prep_pdf,
+            prep_data,
+            job.get("title", ""),
+            job.get("company", ""),
+            output_dir,
+            config,
+        )
+        return FileResponse(
+            pdf_path,
+            media_type="application/pdf",
+            headers={"Content-Disposition": 'inline; filename="interview_prep.pdf"'},
+        )
+    except PdfGenerationError as exc:
+        logger.error(f"Interview prep PDF failed for {job_id}: {exc}")
+        return HTMLResponse(f"PDF generation failed: {exc}", status_code=500)
 
 
 @router.post("/matches/add-job")
