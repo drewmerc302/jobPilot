@@ -156,12 +156,15 @@ Candidate's resume (YAML):
         db,
         "interview_prep",
         job_id=job.get("id"),
-        model=config.llm_tailor_model,
-        max_tokens=2000,
+        model=config.llm_extract_model,
+        max_tokens=4096,
         tools=[PREP_TOOL],
         tool_choice={"type": "any"},
         messages=[{"role": "user", "content": prompt}],
     )
+
+    if response.stop_reason == "max_tokens":
+        logger.warning("interview_prep: response truncated (max_tokens reached)")
 
     for block in response.content:
         if hasattr(block, "type") and block.type == "tool_use":

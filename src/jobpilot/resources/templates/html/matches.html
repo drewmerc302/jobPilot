@@ -86,11 +86,15 @@
   </div>
   {% endif %}
 
-  <div style="margin-bottom:12px;text-align:right">
+  <div style="margin-bottom:12px;display:flex;gap:8px;justify-content:flex-end">
+    <button type="button" class="btn btn-outline btn-sm"
+            onclick="document.getElementById('add-company-modal').showModal()">+ Add company</button>
     <button type="button" class="btn btn-primary btn-sm"
             onclick="document.getElementById('add-job-modal').showModal()"
             data-tooltip="Add a job you found elsewhere — scored and analyzed the same as scraped listings." data-tip-pos="bottom">+ Add a job from another site</button>
   </div>
+
+  <div id="add-company-progress-container"></div>
 
   {% if not matches %}
   <div class="card" style="text-align:center;padding:48px">
@@ -263,6 +267,57 @@
   var dlg = document.getElementById("add-job-modal");
   if (dlg) dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
 })();
+</script>
+
+{# ── Add Company Modal ── #}
+<dialog id="add-company-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;background:transparent;max-width:none">
+  <div class="card" style="min-width:360px;max-width:440px;padding:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <h3 style="margin:0;font-size:16px;font-weight:700">Add a company</h3>
+      <button type="button" aria-label="Close" onclick="document.getElementById('add-company-modal').close()"
+              style="background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0">&times;</button>
+    </div>
+    <form hx-post="/matches/add-company"
+          hx-target="#add-company-result"
+          hx-swap="innerHTML"
+          style="padding:20px">
+      <p class="muted" style="font-size:13px;margin:0 0 12px">Enter a company name to scan their Greenhouse job board.</p>
+      <input type="text" name="company" required placeholder="e.g. Stripe, Figma, Datadog"
+             style="width:100%;margin-bottom:8px">
+      <div id="add-company-result"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button type="button" class="btn btn-outline btn-sm"
+                onclick="document.getElementById('add-company-modal').close()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Check &amp; Scan</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById("add-company-modal");
+  if (dlg) dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+})();
+document.body.addEventListener('addCompanyStarted', function(e) {
+  document.getElementById('add-company-modal').close();
+  var data = e.detail;
+  var container = document.getElementById('add-company-progress-container');
+  var div = document.createElement('div');
+  div.id = 'add-company-progress';
+  div.setAttribute('hx-get', '/api/run/' + data.run_id + '/status?compact=1');
+  div.setAttribute('hx-trigger', 'every 1s');
+  div.setAttribute('hx-swap', 'outerHTML');
+  div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg-2,#f5f5f5);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px';
+  var spinner = document.createElement('span');
+  spinner.className = 'spinner';
+  div.appendChild(spinner);
+  var label = document.createElement('span');
+  label.textContent = 'Starting scan of ' + data.company + '…';
+  div.appendChild(label);
+  container.innerHTML = '';
+  container.appendChild(div);
+  htmx.process(container);
+});
 </script>
 
 {% endblock %}

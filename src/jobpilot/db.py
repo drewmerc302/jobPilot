@@ -102,6 +102,14 @@ class Database:
             self._conn.commit()
         except sqlite3.OperationalError:
             pass
+        # Add Company: track run kind so add_company runs don't consume daily cap.
+        try:
+            self._conn.execute(
+                "ALTER TABLE runs ADD COLUMN kind TEXT NOT NULL DEFAULT 'refresh'"
+            )
+            self._conn.commit()
+        except sqlite3.OperationalError:
+            pass
         # Close any runs that were left open by a crash
         now = datetime.now(timezone.utc).isoformat()
         self._conn.execute(
@@ -339,11 +347,11 @@ class Database:
             )
         self._conn.commit()
 
-    def start_run(self, auto: bool = False) -> int:
+    def start_run(self, auto: bool = False, kind: str = "refresh") -> int:
         now = datetime.now(timezone.utc).isoformat()
         cursor = self._conn.execute(
-            "INSERT INTO runs (started_at, auto) VALUES (?, ?)",
-            (now, 1 if auto else 0),
+            "INSERT INTO runs (started_at, auto, kind) VALUES (?, ?, ?)",
+            (now, 1 if auto else 0, kind),
         )
         self._conn.commit()
         return cursor.lastrowid
@@ -599,15 +607,16 @@ class Database:
         return row["total"] or 0.0
 
     def count_runs_today_total(self) -> int:
-        """Count every run (manual + auto) started today, local time.
+        """Count refresh runs (manual + auto) started today, local time.
 
-        Both auto-refresh and manual refresh share the same daily ceiling
-        so the user's API spend can't exceed `max_runs_per_day` regardless
-        of how the runs were initiated.
+        Only kind='refresh' runs count toward the daily cap.
+        Add-company runs are exempt so users can always add a company
+        without burning a refresh slot.
         """
         row = self._conn.execute(
             "SELECT COUNT(*) AS cnt FROM runs "
-            "WHERE date(started_at, 'localtime') = date('now', 'localtime')"
+            "WHERE date(started_at, 'localtime') = date('now', 'localtime') "
+            "AND kind = 'refresh'"
         ).fetchone()
         return row["cnt"] or 0
 

@@ -1,0 +1,44 @@
+{% if stage in ("starting", "scraping", "filtering") %}
+<div id="add-company-progress"
+     hx-get="/api/run/{{ run_id }}/status?compact=1"
+     hx-trigger="every 1s"
+     hx-swap="outerHTML"
+     style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg-2,#f5f5f5);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px">
+  <span class="spinner"></span>
+  <span style="font-size:14px">
+    {% if stage == "starting" %}Starting scan…
+    {% elif stage == "scraping" %}Scanning {{ company }}…
+    {% elif stage == "filtering" %}Evaluating jobs…{% if filter_total %} ({{ filter_current }}/{{ filter_total }}){% endif %}
+    {% endif %}
+  </span>
+  {% if detail %}
+  <span class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{{ detail }}</span>
+  {% endif %}
+</div>
+
+{% elif stage == "done" %}
+<div id="add-company-progress"
+     style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#ecfdf5;border:1px solid #86efac;border-radius:var(--radius);margin-bottom:16px">
+  <span style="font-size:14px">
+    {% if result and result.new_matches > 0 %}
+    &#10003; Added {{ company }} — {{ result.new_matches }} new match{{ 'es' if result.new_matches != 1 else '' }} found!
+    {% elif result and result.jobs_scraped > 0 %}
+    &#10003; Added {{ company }} — scanned {{ result.jobs_scraped }} jobs, none matched your filters yet.
+    {% else %}
+    &#10003; Added {{ company }} — no open jobs on their board right now.
+    {% endif %}
+  </span>
+  <button type="button" class="btn btn-outline btn-sm" style="font-size:11px" onclick="this.parentElement.remove()">Dismiss</button>
+</div>
+<script>setTimeout(function(){var el=document.getElementById('add-company-progress');if(el)el.remove()},10000)</script>
+{% if result and result.new_matches > 0 %}
+<script>location.reload()</script>
+{% endif %}
+
+{% elif stage == "error" %}
+<div id="add-company-progress"
+     style="padding:12px 16px;background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--radius);margin-bottom:16px">
+  <span style="font-size:14px">&#10007; Scan failed: {{ error or "Unknown error" }}</span>
+  <button type="button" class="btn btn-outline btn-sm" style="font-size:11px;margin-left:8px" onclick="this.parentElement.remove()">Dismiss</button>
+</div>
+{% endif %}

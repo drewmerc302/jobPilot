@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import html as html_mod
 import ipaddress
 import json
 import logging
@@ -132,6 +133,10 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
 
     client = request.app.state.client
     run_status = request.app.state.run_status
+
+    for _rid, status in run_status.items():
+        if status.get("stage") in ("starting", "scraping", "filtering"):
+            return RedirectResponse("/matches?refresh_capped=1", status_code=303)
     run_id = db.start_run()
     run_status[run_id] = {
         "stage": "starting",
@@ -535,7 +540,7 @@ async def interview_prep_match(job_id: str, request: Request) -> HTMLResponse:
             config,
             client,
         )
-        if prep_result is None:
+        if not prep_result:
             return HTMLResponse(
                 "<span class='error'>Interview prep failed — please try again.</span>"
             )
@@ -597,6 +602,123 @@ async def interview_prep_pdf(job_id: str, request: Request):
     except PdfGenerationError as exc:
         logger.error(f"Interview prep PDF failed for {job_id}: {exc}")
         return HTMLResponse(f"PDF generation failed: {exc}", status_code=500)
+
+
+@router.post("/matches/add-company", response_class=HTMLResponse)
+async def add_company(request: Request, company: str = Form(...)) -> HTMLResponse:
+    """Probe Greenhouse for a company board; if found, launch a background scrape+filter."""
+    company = company.strip()
+    if not company:
+        return HTMLResponse(
+            "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
+            "Please enter a company name.</div>"
+        )
+
+    db = request.app.state.db
+    config = request.app.state.config
+    client = request.app.state.client
+    profile = request.app.state.profile_store.load()
+    sp = request.app.state.search_params_store.load()
+
+    if not profile or not sp:
+        return HTMLResponse(
+            "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
+            "Complete onboarding before adding companies.</div>"
+        )
+    if compute_ladder(config, db)["state"] == "gift_exhausted":
+        return HTMLResponse(
+            "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
+            "Starter credit used up. <a href='/settings'>Add your own key →</a></div>"
+        )
+    if client is None:
+        return HTMLResponse(
+            "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
+            "No API key configured. <a href='/settings'>Add one →</a></div>"
+        )
+
+    # Concurrency guard — only one pipeline at a time
+    run_status = request.app.state.run_status
+    for _rid, status in run_status.items():
+        if status.get("stage") in ("starting", "scraping", "filtering"):
+            return HTMLResponse(
+                "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
+                "A scan is already running — wait for it to finish.</div>"
+            )
+
+    # Probe Greenhouse synchronously
+    try:
+        gh_scraper = await asyncio.to_thread(probe_greenhouse, company)
+    except GreenhouseProbeError:
+        return HTMLResponse(
+            "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
+            "Greenhouse temporarily unreachable — try again in a minute.</div>"
+        )
+
+    if gh_scraper is None:
+        return HTMLResponse(
+            "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
+            f"No public Greenhouse board found for '{html_mod.escape(company)}'.</div>"
+        )
+
+    # Launch background pipeline for this single company
+    run_id = db.start_run(kind="add_company")
+    run_status[run_id] = {
+        "stage": "starting",
+        "result": None,
+        "error": None,
+        "warnings": [],
+        "detail": "",
+        "filter_current": 0,
+        "filter_total": 0,
+        "company": company,
+    }
+
+    search_params_store = request.app.state.search_params_store
+
+    def update_stage(stage: str) -> None:
+        run_status[run_id]["stage"] = stage
+
+    def update_detail(detail: str, filter_current=0, filter_total=0) -> None:
+        run_status[run_id]["detail"] = detail
+        if filter_total:
+            run_status[run_id]["filter_current"] = filter_current
+            run_status[run_id]["filter_total"] = filter_total
+
+    async def _run():
+        try:
+            result = await asyncio.to_thread(
+                run_pipeline,
+                db,
+                profile,
+                sp,
+                config,
+                [gh_scraper],
+                client,
+                run_id,
+                update_stage,
+                update_detail,
+            )
+            search_params_store.add_anchor_company(company)
+            run_status[run_id]["stage"] = "done"
+            run_status[run_id]["result"] = result
+        except Exception as exc:
+            logger.error(f"Add-company pipeline run {run_id} failed: {exc}")
+            run_status[run_id]["stage"] = "error"
+            run_status[run_id]["error"] = str(exc)
+
+    task = asyncio.create_task(_run())
+    background_tasks = request.app.state.background_tasks
+    background_tasks.add(task)
+    task.add_done_callback(background_tasks.discard)
+
+    response = HTMLResponse(
+        "<div class='alert alert-info' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
+        "Scanning — check progress below.</div>"
+    )
+    response.headers["HX-Trigger"] = json.dumps(
+        {"addCompanyStarted": {"run_id": run_id, "company": company}}
+    )
+    return response
 
 
 @router.post("/matches/add-job")

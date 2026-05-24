@@ -160,13 +160,8 @@
           {% if can_act %}
           <div>
             <button class="btn btn-outline btn-sm" style="width:100%"
-                    hx-post="/matches/{{ job.id }}/interview-prep"
-                    hx-target="#prep-section"
-                    hx-swap="innerHTML"
-                    hx-indicator="#prep-spinner"
-                    hx-on::after-request="var el=document.getElementById('prep-section');if(el.children.length)el.scrollIntoView({behavior:'smooth',block:'start'})"
+                    onclick="var m=document.getElementById('prep-modal');m.showModal();htmx.ajax('POST','/matches/{{ job.id }}/interview-prep',{target:'#prep-section',swap:'innerHTML'}).then(function(){m.close();var el=document.getElementById('prep-section');if(el.children.length)el.scrollIntoView({behavior:'smooth',block:'start'});}).catch(function(){m.close();})"
                     data-tooltip="Generate likely interview questions with suggested answers tailored to this role.">
-              <span id="prep-spinner" class="htmx-indicator spinner"></span>
               {% if prep_result %}↻ Regenerate Q&A{% else %}Interview Q&A Guide{% endif %}
             </button>
             <p class="muted" style="font-size:11px;margin:3px 0 0;text-align:center">~$0.08 per use</p>
@@ -364,5 +359,18 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 {% endif %}
+
+{# Interview Q&A progress modal #}
+<dialog id="prep-modal" style="border:1px solid var(--border);border-radius:var(--radius);padding:0;background:transparent;max-width:none">
+  <div class="card" style="min-width:320px;max-width:400px;padding:24px;text-align:center">
+    <h3 style="margin:0 0 16px;font-size:16px;font-weight:700">Generating Interview Q&A</h3>
+    <div style="margin:24px 0">
+      <span class="spinner" style="width:32px;height:32px;border-width:3px"></span>
+    </div>
+    <p style="margin:0 0 8px;font-size:14px">Analyzing the job description against your resume…</p>
+    <p class="muted" style="margin:0;font-size:12px">This usually takes 1–2 minutes. Please don't close this tab.</p>
+    <p class="muted" style="margin:8px 0 0;font-size:11px">~$0.08 per use</p>
+  </div>
+</dialog>
 
 {% endblock %}

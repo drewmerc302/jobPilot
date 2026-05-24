@@ -69,5 +69,15 @@ class SearchParamsStore:
         )
         tmp.replace(self._path)
 
+    def add_anchor_company(self, company: str) -> None:
+        """Append a company to anchor_companies if not already present."""
+        params = self.load()
+        if params is None:
+            return
+        existing = {c.lower() for c in params.anchor_companies}
+        if company.strip().lower() not in existing:
+            params.anchor_companies.append(company.strip())
+            self.save(params)
+
     def has_params(self) -> bool:
         return self._path.exists()
