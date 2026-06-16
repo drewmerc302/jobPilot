@@ -445,15 +445,16 @@ class Database:
             LEFT JOIN applications a ON m.job_id = a.job_id
             WHERE m.dismissed_at IS NULL
               AND (j.closed_at IS NULL
-                   OR COALESCE(a.status, 'new') IN ('applied', 'interviewing', 'offer'))
+                   OR COALESCE(a.status, 'new') IN ('interested', 'applied', 'interviewing', 'offer'))
             ORDER BY
                 CASE COALESCE(a.status, 'new')
                     WHEN 'interviewing' THEN 1
                     WHEN 'offer' THEN 2
                     WHEN 'applied' THEN 3
-                    WHEN 'new' THEN 4
-                    WHEN 'rejected' THEN 5
-                    WHEN 'withdrawn' THEN 6
+                    WHEN 'interested' THEN 4
+                    WHEN 'new' THEN 5
+                    WHEN 'rejected' THEN 6
+                    WHEN 'withdrawn' THEN 7
                 END,
                 m.relevance_score DESC
         """).fetchall()
@@ -492,6 +493,7 @@ class Database:
             WHERE a.follow_up_after IS NOT NULL
               AND a.follow_up_after <= ?
               AND a.status IN ('new', 'applied', 'interviewing')
+              AND j.closed_at IS NULL
             ORDER BY a.follow_up_after ASC
             """,
             (today, today),
