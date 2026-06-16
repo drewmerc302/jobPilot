@@ -50,14 +50,22 @@ fan out `probe_greenhouse` + `probe_lever` + `probe_workday` and pick the hit.
 tenant is an opaque id (e.g. `ehzc`), and `siteNumber` (default `CX_1001`)
 varies per employer. A name-based `probe_oracle` cannot reliably guess either.
 
-Options:
-- **A (recommended, v1): user pastes the Oracle careers URL.** Parse `tenant`
-  + `siteNumber` from it during add-company. Reliable, ~zero false hits. Needs
-  add-company UI to accept a URL alongside the company name.
-- **B: curated tenant map** for the top ~20 Oracle employers. Fast for big
-  names, zero coverage for the long tail, needs maintenance. Good v1.x supplement.
-- **C: blind probe** — guess tenant from name and fan out site numbers like
-  workday. Low hit rate (opaque tenants), noisy. Not worth it.
+**Decision: both A + B** (C rejected — blind probe too noisy on opaque tenants).
+- **A: user pastes the Oracle careers URL.** Parse `tenant` + `siteNumber` from
+  it during add-company. Reliable, ~zero false hits, unlimited coverage.
+- **B: curated tenant map** for the top ~20 Oracle employers. Zero friction for
+  the big names users actually target. Needs occasional upkeep (tenants drift).
+
+**Resolution precedence** in `probe_oracle(company_name, url=None)`:
+1. Company in curated map → use mapped `(tenant, siteNumber)`. Zero user effort.
+2. Else `url` provided → parse `tenant` + `siteNumber` from it.
+3. Else → return `None`. Oracle can't resolve this company; the other ATS
+   probes still run, so add-company isn't blocked.
+
+**Add-company UX:** add an optional "careers URL" field. Map covers the 80%
+friction-free; the URL field is the catch-all for the tail. Surface a clear
+error only when the user *expected* Oracle (pasted an oraclecloud URL) and it
+failed to parse — not when Oracle simply wasn't the right ATS.
 
 ## Build sequence
 
@@ -93,8 +101,8 @@ Options:
 - Probe stride bug: forgetting one `i*3 → i*4` site corrupts result mapping for
   *all* ATSes, not just Oracle. Test the probe fan-out explicitly.
 
-## Open question (load-bearing)
+## Status
 
-Tenant discovery strategy — **A (URL paste)**, **B (curated map)**, or both?
-This decides the add-company UX and is the bulk of the work. The scraper itself
-is a near-copy.
+Tenant discovery decided: **both A + B** (map first, URL fallback — see above).
+Scope is settled; ready to build when picked up. The scraper is a near-copy;
+the work is the discovery layer + add-company URL field + probe-stride wiring.
