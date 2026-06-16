@@ -281,9 +281,13 @@
           hx-target="#add-company-result"
           hx-swap="innerHTML"
           style="padding:20px">
-      <p class="muted" style="font-size:13px;margin:0 0 12px">Enter a company name to scan their Greenhouse job board.</p>
+      <p class="muted" style="font-size:13px;margin:0 0 12px">Enter a company name — we'll check Greenhouse, Lever, Workday, and Oracle boards.</p>
       <input type="text" name="company" required placeholder="e.g. Stripe, Figma, Datadog"
              style="width:100%;margin-bottom:8px">
+      <input type="url" name="careers_url"
+             placeholder="Oracle careers URL (optional) — https://company.fa.oraclecloud.com/…"
+             style="width:100%;margin-bottom:4px;font-size:12px">
+      <p class="muted" style="font-size:11px;margin:0 0 8px">Only needed for Oracle HCM employers we don't recognize by name.</p>
       <div id="add-company-result"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
         <button type="button" class="btn btn-outline btn-sm"

@@ -12,6 +12,7 @@ from jobpilot.scrapers.adzuna import AdzunaScraper
 from jobpilot.scrapers.greenhouse import GreenhouseProbeError, probe_greenhouse
 from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
 from jobpilot.scrapers.lever import LeverProbeError, probe_lever
+from jobpilot.scrapers.oracle import OracleProbeError, probe_oracle
 from jobpilot.scrapers.workday import WorkdayProbeError, probe_workday
 from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.search_params import SearchParams
@@ -419,12 +420,21 @@ async def _build_scrapers(sp) -> list:
             all_probes.append(asyncio.to_thread(probe_greenhouse, c))
             all_probes.append(asyncio.to_thread(probe_lever, c))
             all_probes.append(asyncio.to_thread(probe_workday, c))
+            all_probes.append(
+                asyncio.to_thread(
+                    probe_oracle,
+                    c,
+                    keywords=sp.keywords,
+                    url=sp.oracle_overrides.get(c.strip().lower()),
+                )
+            )
         probe_results = await asyncio.gather(*all_probes, return_exceptions=True)
 
         for i, company in enumerate(sp.anchor_companies):
-            gh_r = probe_results[i * 3]
-            lever_r = probe_results[i * 3 + 1]
-            workday_r = probe_results[i * 3 + 2]
+            gh_r = probe_results[i * 4]
+            lever_r = probe_results[i * 4 + 1]
+            workday_r = probe_results[i * 4 + 2]
+            oracle_r = probe_results[i * 4 + 3]
 
             if isinstance(gh_r, (GreenhouseProbeError, Exception)):
                 logger.warning("Greenhouse probe for %s failed: %s", company, gh_r)
@@ -440,6 +450,11 @@ async def _build_scrapers(sp) -> list:
                 logger.warning("Workday probe for %s failed: %s", company, workday_r)
             elif workday_r is not None:
                 scrapers.append(workday_r)
+
+            if isinstance(oracle_r, (OracleProbeError, Exception)):
+                logger.warning("Oracle probe for %s failed: %s", company, oracle_r)
+            elif oracle_r is not None:
+                scrapers.append(oracle_r)
 
     return scrapers
 

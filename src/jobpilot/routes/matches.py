@@ -21,6 +21,7 @@ from jobpilot.scrapers.adzuna import AdzunaScraper
 from jobpilot.scrapers.greenhouse import GreenhouseProbeError, probe_greenhouse
 from jobpilot.scrapers.jobspy_scraper import JobSpyScraper
 from jobpilot.scrapers.lever import LeverProbeError, probe_lever
+from jobpilot.scrapers.oracle import OracleProbeError, probe_oracle
 from jobpilot.scrapers.workday import WorkdayProbeError, probe_workday
 from jobpilot.scrapers.jooble import JooblesScraper
 from jobpilot.steps.interview_prep import (
@@ -161,13 +162,22 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
             all_probes.append(asyncio.to_thread(probe_greenhouse, c))
             all_probes.append(asyncio.to_thread(probe_lever, c))
             all_probes.append(asyncio.to_thread(probe_workday, c))
+            all_probes.append(
+                asyncio.to_thread(
+                    probe_oracle,
+                    c,
+                    keywords=sp.keywords,
+                    url=sp.oracle_overrides.get(c.strip().lower()),
+                )
+            )
         probe_results = await asyncio.gather(*all_probes, return_exceptions=True)
 
         gh_skipped: list[str] = []
         for i, company in enumerate(sp.anchor_companies):
-            gh_r = probe_results[i * 3]
-            lever_r = probe_results[i * 3 + 1]
-            workday_r = probe_results[i * 3 + 2]
+            gh_r = probe_results[i * 4]
+            lever_r = probe_results[i * 4 + 1]
+            workday_r = probe_results[i * 4 + 2]
+            oracle_r = probe_results[i * 4 + 3]
 
             # Greenhouse — track skipped for warnings
             if isinstance(gh_r, GreenhouseProbeError):
@@ -190,6 +200,12 @@ async def start_pipeline_run(request: Request) -> RedirectResponse:
                 logger.warning("Workday probe for %s failed: %s", company, workday_r)
             elif workday_r is not None:
                 scrapers.append(workday_r)
+
+            # Oracle
+            if isinstance(oracle_r, (OracleProbeError, Exception)):
+                logger.warning("Oracle probe for %s failed: %s", company, oracle_r)
+            elif oracle_r is not None:
+                scrapers.append(oracle_r)
 
         if gh_skipped:
             run_status[run_id]["warnings"].append(
@@ -629,9 +645,18 @@ async def interview_prep_pdf(job_id: str, request: Request):
 
 
 @router.post("/matches/add-company", response_class=HTMLResponse)
-async def add_company(request: Request, company: str = Form(...)) -> HTMLResponse:
-    """Probe job boards for a company; if found, launch a background scrape+filter."""
+async def add_company(
+    request: Request,
+    company: str = Form(...),
+    careers_url: str = Form(""),
+) -> HTMLResponse:
+    """Probe job boards for a company; if found, launch a background scrape+filter.
+
+    `careers_url` is optional — used only to resolve Oracle HCM boards, which
+    have no name→tenant convention. Ignored by the other ATS probes.
+    """
     company = company.strip()
+    careers_url = careers_url.strip()
     if not company:
         return HTMLResponse(
             "<div class='alert alert-error' style='margin:0 0 8px;padding:8px 12px;font-size:13px'>"
@@ -669,11 +694,14 @@ async def add_company(request: Request, company: str = Form(...)) -> HTMLRespons
                 "A scan is already running — wait for it to finish.</div>"
             )
 
-    # Probe all supported job boards in parallel
+    # Probe all supported job boards in parallel. Oracle resolves from the pasted
+    # careers URL, or a previously-stored override for this company.
+    oracle_url = careers_url or sp.oracle_overrides.get(company.lower())
     probe_results = await asyncio.gather(
         asyncio.to_thread(probe_greenhouse, company),
         asyncio.to_thread(probe_lever, company),
         asyncio.to_thread(probe_workday, company),
+        asyncio.to_thread(probe_oracle, company, keywords=sp.keywords, url=oracle_url),
         return_exceptions=True,
     )
 
@@ -736,6 +764,8 @@ async def add_company(request: Request, company: str = Form(...)) -> HTMLRespons
                 update_detail,
             )
             search_params_store.add_anchor_company(company)
+            if careers_url and getattr(scraper, "source", None) == "oracle":
+                search_params_store.add_oracle_override(company, careers_url)
             run_status[run_id]["stage"] = "done"
             run_status[run_id]["result"] = result
         except Exception as exc:

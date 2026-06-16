@@ -22,3 +22,8 @@ class SearchParams:
     remote_ok: bool = False
     seniority: str | None = None
     anchor_companies: list[str] = field(default_factory=list)
+    # Oracle HCM has no slug→tenant convention, so a company resolved from a
+    # pasted careers URL must persist that URL — otherwise the next full refresh
+    # (which only has the company name) silently stops scraping it. Keyed by
+    # lowercased company name → careers URL.
+    oracle_overrides: dict[str, str] = field(default_factory=dict)

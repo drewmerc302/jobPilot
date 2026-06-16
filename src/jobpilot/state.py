@@ -79,5 +79,14 @@ class SearchParamsStore:
             params.anchor_companies.append(company.strip())
             self.save(params)
 
+    def add_oracle_override(self, company: str, url: str) -> None:
+        """Persist the careers URL an Oracle company was resolved from, so future
+        refreshes (which only have the company name) can re-resolve its tenant."""
+        params = self.load()
+        if params is None:
+            return
+        params.oracle_overrides[company.strip().lower()] = url
+        self.save(params)
+
     def has_params(self) -> bool:
         return self._path.exists()

@@ -101,8 +101,34 @@ failed to parse — not when Oracle simply wasn't the right ATS.
 - Probe stride bug: forgetting one `i*3 → i*4` site corrupts result mapping for
   *all* ATSes, not just Oracle. Test the probe fan-out explicitly.
 
-## Status
+## Status — SHIPPED (2026-06-16)
 
-Tenant discovery decided: **both A + B** (map first, URL fallback — see above).
-Scope is settled; ready to build when picked up. The scraper is a near-copy;
-the work is the discovery layer + add-company URL field + probe-stride wiring.
+Tenant discovery: **both A + B** (map first, URL fallback). Implemented:
+- `scrapers/oracle.py`: `OracleScraper` + `probe_oracle(name, *, keywords, url)`
+  + `_parse_oracle_url` + curated `_TENANT_MAP` (seeded with JPMorganChase =
+  `jpmc`/`CX_1001`, verified from jobTracker config).
+- `SearchParams.oracle_overrides` + `SearchParamsStore.add_oracle_override` so a
+  URL-resolved company survives future refreshes (otherwise the name-only
+  refresh path would silently drop it).
+- Wired into all 3 probe sites (`routes/matches.py` ×2, `routes/wizard.py`),
+  stride `i*3 → i*4` on the two anchor-loop sites.
+- Add-company modal: optional careers-URL field; the URL is persisted on success.
+- `tests/test_oracle.py` (13 cases): URL parse, probe precedence, req parse,
+  remote codes, title prefilter, overrides round-trip + legacy-JSON back-compat.
+
+### v1 behaviors / deviations to note
+- **Detail fetch stays in the scraper** (not deferred to `fetch_description`):
+  the public Oracle job page is a JS SPA, so the lazy URL fetcher can't recover
+  descriptions — the REST detail endpoint is required.
+- **Title keyword prefilter before detail fetch.** Unlike Greenhouse/Workday
+  (which return everything and let `filter.py` decide), Oracle prefilters by the
+  user's `keywords` to bound the per-req detail fetch, plus a `max_details=200`
+  hard cap (logged when hit). Empty keywords → no prefilter, cap still applies.
+  Tradeoff: a relevant job whose title lacks a keyword substring can be missed.
+- **Anchor-refresh resolves via map + stored override only** (no live URL at
+  refresh time, by design — the URL is captured once at add-company).
+
+### Not done (future)
+- Expand `_TENANT_MAP` with more verified employers (Citi, BofA, Disney, …) —
+  needs each tenant confirmed against the live board before adding.
+- `siteNumber` mismatch currently yields zero results, not a distinct error.
