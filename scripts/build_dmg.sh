@@ -19,6 +19,12 @@
 #   the dev venv. This is the only known workaround until python-jobspy relaxes
 #   its numpy pin or numpy 1.26.3 ships cp313 wheels.
 #
+# Why the tls_client dylib fix (Step 3b):
+#   tls_client 1.0.1 (pulled in by jobspy) bundles an old Go-built
+#   tls-client-arm64.dylib that macOS 15+/Darwin 24+ dyld rejects ("chained
+#   fixups, seg_count does not match"), breaking `from jobspy import scrape_jobs`.
+#   fetch_tls_client.sh drops in a modern upstream build and signs it.
+#
 set -euo pipefail
 
 IDENTITY="Developer ID Application: Andrew Mercurio (9247884EWA)"
@@ -64,6 +70,9 @@ for pkg in jobspy tls_client markdownify regex; do
     fi
 done
 echo "Patched jobspy + deps from dev venv"
+
+echo "=== Step 3b: Fix tls_client arm64 dylib (modern-dyld build) ==="
+"$PROJECT_DIR/scripts/fetch_tls_client.sh" "$APP_PACKAGES/tls_client/dependencies"
 
 echo "=== Step 4: Package (sign + notarize + staple) ==="
 briefcase package macOS -i "$IDENTITY" -p dmg
